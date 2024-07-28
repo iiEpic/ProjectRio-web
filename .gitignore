@@ -1,7 +1,4 @@
-/env
-.DS_Store
-TODO.md
+venv/
 .env
-local_postgres_setup_instructions.md.rtf
-endpoint_log.log
-Dockerfile
+db.sqlite3
+.idea/

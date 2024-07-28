@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Project Rio - Register
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'frontend/css/register.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid text-center">
+    <h1 class="mt-3">Create Rio User</h1>
+    <div class="container bg-dark login-bg mt-4 pb-5 pt-5">
+        <div class="alert alert-secondary bg-white text-start pb-0 mx-auto" style="width:90%;">
+                <ul>
+                    <li class="fw-bold">Username</li>
+                    <ul>
+                        <li>Username must be alphanumeric</li>
+                    </ul>
+                    <li class="fw-bold">Password</li>
+                    <ul>
+                        <li>At least 1 lowercase character</li>
+                        <li>At least 1 uppercase character</li>
+                        <li>At least 1 number</li>
+                        <li>At least 1 special character</li>
+                        <li>At least 8 characters in length</li>
+                        <li>Password match</li>
+                    </ul>
+                </ul>
+            </div>
+        <form class="bg-dark">
+            <div class="form-floating mb-3 mx-auto" style="width:90%;">
+                <input type="text" class="form-control" id="floatingInput" placeholder="username">
+                <label for="floatingInput" style="color: black;">Username</label>
+            </div>
+            <div class="form-floating mb-3 mx-auto" style="width:90%;">
+                <input type="password" class="form-control" id="floatingPassword1" placeholder="Password">
+                <label for="floatingPassword1" style="color: black;">Password</label>
+            </div>
+            <div class="form-floating mb-3 mx-auto" style="width:90%;">
+                <input type="password" class="form-control" id="floatingPassword2" placeholder="Re-enter Password">
+                <label for="floatingPassword2" style="color: black;">Re-enter Password</label>
+            </div>
+            <button class="btn btn-primary mx-auto" type="submit" style="width:90%;">Create Rio User</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

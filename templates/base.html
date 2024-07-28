@@ -1,0 +1,131 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}{% endblock %}</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <link rel="stylesheet" href="{% static 'frontend/css/main.css' %}">
+        {% block head %}{% endblock %}
+    </head>
+    <body>
+        <nav class="navbar navbar-dark fixed-top navbar-expand-lg me-auto" style="background-color: rgb(179 26 26); position: 0;">
+            <div class="container-fluid">
+                <a class="navbar-brand text-white" href="/">
+                    <img src="{% static 'frontend/images/project_rio_icon.png' %} " alt="Logo" width="40" height="40" class="d-inline-block align-text-center">
+                    Project Rio Web <sup class="text-dark">[Alpha]</sup>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                    <ul class="navbar-nav mb-2 mb-lg-0">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Socials
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="https://discord.gg/c3r9PabfRU"><i class="bi bi-discord me-2"></i>Discord</a></li>
+                                <li><a class="dropdown-item" href="https://www.patreon.com/projectrio/posts"><i class="bi bi-p-square-fill me-2"></i>Patreon</a></li>
+                                <li><a class="dropdown-item" href="https://github.com/ProjectRio?tab=repositories"><i class="bi bi-github me-2"></i>GitHub</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="container-fluid d-flex flex-column ps-0 pe-0" style="top: 0; bottom: 0; padding-top: 65px">
+            <div class="row flex-grow-1">
+                <div class="col-md border-end position-fixed bg-dark text-white flex-shrink-0 p-3 overflow-scroll" style="top: 65px; bottom: 0; width: 280px;">
+                    <ul class="list-unstyled ps-0">
+                        <li class="mb-1">
+                            <button class="btn btn-toggle align-items-center rounded text-white collapsed" data-bs-toggle="collapse" data-bs-target="#modes-collapse" aria-expanded="false">
+                            <i class="bi bi-list me-2"></i>Modes
+                            </button>
+                            <div class="collapse" id="modes-collapse">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Unofficial</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Official</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">All</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="mb-1">
+                            <button class="btn btn-toggle align-items-center rounded text-white collapsed" data-bs-toggle="collapse" data-bs-target="#games-collapse" aria-expanded="false">
+                            <i class="bi bi-list me-2"></i>Games
+                            </button>
+                            <div class="collapse" id="games-collapse">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Live</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Recent</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">All</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="mb-1">
+                            <button class="btn btn-toggle align-items-center rounded text-white collapsed" data-bs-toggle="collapse" data-bs-target="#community-collapse" aria-expanded="false">
+                            <i class="bi bi-list me-2"></i>Community
+                            </button>
+                            <div class="collapse" id="community-collapse">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Create Community</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Create Gamemode</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">View Communities</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="mb-1">
+                            <button class="btn btn-toggle align-items-center rounded text-white collapsed" data-bs-toggle="collapse" data-bs-target="#stats-collapse" aria-expanded="false">
+                            <i class="bi bi-list me-2"></i>Stats
+                            </button>
+                            <div class="collapse" id="stats-collapse">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">User Stats</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Character Stats</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="mb-1">
+                            <button class="btn btn-toggle align-items-center rounded text-white collapsed" data-bs-toggle="collapse" data-bs-target="#misc-collapse" aria-expanded="false">
+                            <i class="bi bi-list me-2"></i>Misc
+                            </button>
+                            <div class="collapse" id="misc-collapse">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">View All Users</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">View Game Tags</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">View Scoreboards</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Pitch Visualizer</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="border-top my-3"></li>
+                        <li class="mb-1">
+                            <button class="btn btn-toggle align-items-center rounded text-white" data-bs-toggle="collapse" data-bs-target="#account-collapse" aria-expanded="true">
+                            <i class="bi bi-list me-2"></i>Account
+                            </button>
+                            <div class="collapse show" id="account-collapse">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                                    {% if request.user.is_authenticated %}
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">View API Key</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Settings</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Sign Out</a></li>
+                                    {% else %}
+                                    <li class="sidebar-li"><a href="{% url 'register' %}" class="sidebar-link">Register</a></li>
+                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Login</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md border-start overflow-x-hidden" style="margin-left: 280px;">
+                    {% block body %}{% endblock %}
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+        {% block script %}{% endblock %}
+    </body>
+</html>
