@@ -11,7 +11,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         random_numbers = random.sample(range(1, 200 + 1), 30)
 
-        for random_number in random_numbers:
-            user = models.RioUser.objects.filter(pk=random_number).first()
-            user.private = True
-            user.save()
+        print(random_numbers)
+        for x in range(0, 200):
+            rand = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=16))
+            models.RioUser.objects.create(
+                username=rand,
+                email=f'{rand}@email.com',
+                password=rand,
+            )
