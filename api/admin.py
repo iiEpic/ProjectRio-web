@@ -106,9 +106,3 @@ class TagSetAdmin(admin.ModelAdmin):
 @admin.register(UserGroup)
 class UserGroupAdmin(admin.ModelAdmin):
     pass
-
-
-@admin.register(UserGroupUser)
-class UserGroupUserAdmin(admin.ModelAdmin):
-    pass
-

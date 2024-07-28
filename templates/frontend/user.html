@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if user is None %}
+Project Rio - No User
+{% else %}
+Project Rio - {{ user.user.username }}
+{% endif %}
+{% endblock %}
+
+{% block body %}
+
+{% if user is None %}
+
+<h1>User does not exist, {{ username }}</h1>
+
+{% else %}
+
+{% if user.private %}
+<div class="alert alert-warning alert-dismissible show mt-3 fw-bold" style="width: 95%;" role="alert">
+  <i class="bi bi-exclamation-triangle me-2"></i>User is private
+</div>
+{% endif %}
+
+<h1>UNDER CONSTRUCTION</h1>
+
+<p>{{ user.username }}'s profile page. This page will contain a player profile with a table of recent games, a small preview of offensive/defensive stats and a link to the detailed table, and other user-related content.</p><br>
+
+<div id="recent_games">
+    <h3>Most Recent Game</h3>
+    <p>Record (Last 10 Games): 0-0</p>
+    <p>Placeholder, need to update this</p>
+</div>
+
+<br/>
+<a href="{% url 'frontend:user_batting' user.username %}">Batting Stats</a><br>
+<a href="{% url 'frontend:user_pitching' user.username %}">Pitching Stats</a>
+
+{% endif %}
+{% endblock %}

@@ -1,14 +1,18 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
 # Create your models here.
 class ApiKey(models.Model):
     api_key = models.CharField(max_length=50, unique=True)
-    date_created = models.IntegerField()
+    date_created = models.DateTimeField(auto_created=True, auto_now=True)
     pings_daily = models.IntegerField()
     pings_weekly = models.IntegerField()
     last_ping_date = models.IntegerField()
     total_pings = models.IntegerField()
+
+    def __str__(self):
+        return self.api_key
 
 
 class ChemistryTable(models.Model):
@@ -104,21 +108,6 @@ class Character(models.Model):
     fielding_stat_bar = models.IntegerField()
 
 
-class RioUser(models.Model):
-    api_key = models.ForeignKey(ApiKey, blank=True, null=True, on_delete=models.CASCADE)
-    username = models.CharField(max_length=64, unique=True)
-    email = models.CharField(max_length=120, unique=True)
-    password = models.CharField(max_length=500)
-    rio_key = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    active_url = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    private = models.BooleanField(default=False)
-    verified = models.BooleanField(default=False)
-    date_created = models.DateTimeField(auto_created=True, auto_now=True)
-
-    def __str__(self):
-        return self.username
-
-
 class UserGroup(models.Model):
     daily_limit = models.IntegerField()
     weekly_limit = models.IntegerField()
@@ -126,10 +115,25 @@ class UserGroup(models.Model):
     name = models.CharField(max_length=32, unique=True)
     desc = models.CharField(max_length=128)
 
+    def __str__(self):
+        return self.name
 
-class UserGroupUser(models.Model):
-    user = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE)
-    user_group = models.ForeignKey(UserGroup, null=False, on_delete=models.CASCADE)
+
+class RioUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    api_key = models.ForeignKey(ApiKey, blank=True, null=True, on_delete=models.CASCADE)
+    user_group = models.ManyToManyField(UserGroup, blank=True)
+    rio_key = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    active_url = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    private = models.BooleanField(default=False)
+    verified = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_created=True, auto_now=True)
+
+    def __str__(self):
+        return self.user.username
+
+    def username(self):
+        return self.user.username
 
 
 class Community(models.Model):
