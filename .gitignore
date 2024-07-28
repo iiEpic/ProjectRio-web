@@ -2,3 +2,7 @@ venv/
 .env
 db.sqlite3
 .idea/
+__pycache__/
+*.py[cod]
+static/
+.DS_Store
