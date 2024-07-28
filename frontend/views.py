@@ -1,8 +1,11 @@
+from api import models
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.shortcuts import render, redirect, reverse
 from django.views import View
-from api import models
+from frontend.forms import LoginForm, RegisterForm
 
 
 # Create your views here.
@@ -20,7 +23,49 @@ class Register(View):
             return render(request, 'frontend/register.html', context={})
 
     def post(self, request):
-        pass
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+            password1 = form.cleaned_data['password1']
+            password2 = form.cleaned_data['password2']
+            # Check if there is a user with that username already
+            if User.objects.filter(username__iexact=username).first() is not None:
+                messages.add_message(request, messages.ERROR, "User already exists with that name.", extra_tags='danger')
+
+            # Check if there is a user with that email already
+            if User.objects.filter(email__iexact=email).first() is not None:
+                messages.add_message(request, messages.ERROR, "User already exists with that email.", extra_tags='danger')
+
+            # Check if password is valid
+            try:
+                validate_password(password1)
+            except:
+                messages.add_message(request, messages.ERROR, "Password does not match criteria stated.", extra_tags='danger')
+
+            # Check if passwords match one another
+            if password1 != password2:
+                messages.add_message(request, messages.ERROR, "Passwords does not match.", extra_tags='danger')
+
+            if len(messages.get_messages(request)) > 0:
+                return render(request, 'frontend/register.html', context={})
+
+            # We passed all the checks, create the user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password1
+            )
+            rio_user = models.RioUser.objects.create(
+                user=user,
+            )
+
+            user = authenticate(request, username=username, password=password1)
+            login(request, user)
+            # User is logged in, send them to homepage
+            return redirect('frontend:home')
+        messages.add_message(request, messages.ERROR, "Form was invalid. Try again", extra_tags='danger')
+        return render(request, 'frontend/register.html', context={})
 
 
 class Login(View):
@@ -32,14 +77,17 @@ class Login(View):
             return render(request, 'frontend/login.html', context={})
 
     def post(self, request, *args, **kwargs):
-        user = authenticate(request, username=request.POST['username'], password=request.POST['password'])
-        if user is not None:
-            login(request, user)
-            # User is logged in, send them to homepage
-            return redirect('frontend:home')
-        else:
-            messages.add_message(request, messages.ERROR, "Wrong username or password.", extra_tags='danger')
-            return render(request, 'frontend/login.html', context={})
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                # User is logged in, send them to homepage
+                return redirect('frontend:home')
+        messages.add_message(request, messages.ERROR, "Wrong username or password.", extra_tags='danger')
+        return render(request, 'frontend/login.html', context={})
 
 
 class Logout(View):

@@ -78,8 +78,6 @@ class Character(models.Model):
     char_id = models.IntegerField(primary_key=True)
     chemistry_table = models.ForeignKey(ChemistryTable, on_delete=models.CASCADE, null=False)
     name = models.CharField(max_length=16)
-    # This seems un-needed, we can just do name.lower()
-    # name_lowercase = models.CharField(max_length=16)
     starting_addr = models.CharField(max_length=16)
     curve_ball_speed = models.IntegerField()
     fast_ball_speed = models.IntegerField()
@@ -97,8 +95,7 @@ class Character(models.Model):
     throwing_arm = models.IntegerField()
     character_class = models.IntegerField()
     weight = models.IntegerField()
-    # Can we change this to a bool?
-    captain = models.IntegerField()
+    captain = models.BooleanField()
     captain_star_hit_or_pitch = models.IntegerField()
     non_captain_star_swing = models.IntegerField()
     non_captain_star_pitch = models.IntegerField()
@@ -168,8 +165,9 @@ class Tag(models.Model):
 
 class TagSet(models.Model):
     community = models.ForeignKey(Community, null=True, on_delete=models.CASCADE)
+    tags = models.ManyToManyField(Tag, blank=True)
     name = models.CharField(max_length=120, unique=True)
-    type = models.CharField(max_length=120) #Season, league, tournament.
+    type = models.CharField(max_length=120)  # Season, league, tournament.
     start_date = models.IntegerField()
     end_date = models.IntegerField()
 
