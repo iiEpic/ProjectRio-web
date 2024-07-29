@@ -31,6 +31,9 @@ class Communities(View):
                 # Found Community, check if community is private and if the requester is a staff member
                 if community_object.private and not request.user.is_staff:
                     # Community is private, see if requester has access to it
+                    if request.user.is_anonymous:
+                        return render(request, 'frontend/community.html', context={'community': None,
+                                                                                   'community_name': kwargs['name']})
                     community_user_object = models.CommunityUser.objects.filter(
                         user=request.user,
                         community=community_object,
