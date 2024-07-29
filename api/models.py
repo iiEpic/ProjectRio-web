@@ -136,15 +136,29 @@ class RioUser(models.Model):
 class Community(models.Model):
     name = models.CharField(max_length=32, unique=True)
     sponsor = models.ForeignKey(RioUser, null=True, on_delete=models.CASCADE)
-    comm_type = models.CharField(max_length=16, help_text='Season, League, or Tournament')
+    community_type = models.CharField(max_length=16, help_text='Season, League, or Tournament')
     private = models.BooleanField(default=True)
     active_tag_set_limit = models.IntegerField(default=0)
     active_url = models.CharField(max_length=50, unique=True)
-    desc = models.CharField(max_length=300, blank=True, null=True)
+    description = models.CharField(max_length=300, blank=True, null=True)
     date_created = models.DateTimeField(auto_created=True, auto_now=True)
 
     def __str__(self):
         return self.name
+
+    def to_json(self):
+        return {
+            'id': self.pk,
+            'name': self.name,
+            'sponsor': self.sponsor.username(),
+            'sponsor_id': self.sponsor.user.pk,
+            'community_type': self.community_type,
+            'private': self.private,
+            'active_tag_set_limit': self.active_tag_set_limit,
+            'active_url': self.active_url,
+            'description': self.description,
+            'date_created': self.date_created
+        }
 
 
 class CommunityUser(models.Model):
@@ -156,6 +170,20 @@ class CommunityUser(models.Model):
     banned = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_created=True, auto_now=True)
 
+    def to_json(self):
+        return {
+            'id': self.pk,
+            'user': self.user.username(),
+            'user_id': self.user.pk,
+            'community': self.community.name,
+            'community_id': self.community.pk,
+            'admin': self.admin,
+            'invited': self.invited,
+            'active': self.active,
+            'banned': self.banned,
+            'date_joined': self.date_joined
+        }
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=32, unique=True)
@@ -166,6 +194,16 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+
+    def to_json(self):
+        return {
+            'id': self.pk,
+            'name': self.name,
+            'type': self.tag_type,
+            'desc': self.desc,
+            'active': self.active,
+            'date_created': self.date_created
+        }
 
 
 class TagSet(models.Model):
@@ -179,11 +217,30 @@ class TagSet(models.Model):
     def __str__(self):
         return self.name
 
+    def to_json(self):
+        return {
+            'id': self.pk,
+            'name': self.name,
+            'type': self.type,
+            'community': self.community.name,
+            'community_id': self.community.pk,
+            'start_date': self.start_date,
+            'end_date': self.end_date,
+            'tags': [i.to_json() for i in self.tags.all()],
+        }
+
 
 class GeckoCodeTag(models.Model):
     tag = models.ForeignKey(Tag, null=False, on_delete=models.CASCADE)
-    gecko_code_desc = models.TextField()
-    gecko_code = models.TextField()
+    description = models.TextField(blank=True)
+    code = models.TextField(blank=True)
+
+    def to_json(self):
+        return {
+            'tag_id': self.tag.pk,
+            'code': self.code,
+            'description': self.description
+        }
 
 
 class OngoingGame(models.Model):
