@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if user is None %}
+Project Rio - No Community
+{% else %}
+Project Rio - {{ community.name }}
+{% endif %}
+{% endblock %}
+
+{% block body %}
+
+{% if community is None %}
+
+<h1>Community does not exist, {{ community_name }}</h1>
+
+{% else %}
+
+{% if community.private %}
+<div class="alert alert-warning alert-dismissible show mt-3 fw-bold" style="width: 95%;" role="alert">
+  <i class="bi bi-exclamation-triangle me-2"></i>Community is private
+</div>
+{% endif %}
+
+<h1>UNDER CONSTRUCTION</h1>
+
+<p>Community page for <span class="fw-bold">[{{ community.name }}]</span></p>
+
+<h2>Tag Sets</h2>
+<table class="table table-dark table-hover" style="width:95%;">
+    <thead>
+        <tr>
+            <th scope="col" class="ps-3">Name</th>
+            <th scope="col">Type</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tag_set in tag_sets %}
+        <tr>
+            <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tagsets' tag_set.name %}" class="link-light">{{ tag_set.name }}</a></th>
+            <td class="col-md-2">{{ tag_set.type }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endif %}
+{% endblock %}

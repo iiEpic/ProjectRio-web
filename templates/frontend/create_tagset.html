@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if user is None %}
+Project Rio - No Community
+{% else %}
+Project Rio - {{ community.name }}
+{% endif %}
+{% endblock %}
+
+{% block body %}
+
+{% if community is None %}
+
+<h1>Community does not exist, {{ community_name }}</h1>
+
+{% else %}
+
+{% if community.private %}
+<div class="alert alert-warning alert-dismissible show mt-3 fw-bold" style="width: 95%;" role="alert">
+  <i class="bi bi-exclamation-triangle me-2"></i>Community is private
+</div>
+{% endif %}
+
+<h1>UNDER CONSTRUCTION</h1>
+
+<p>Community page for <span class="fw-bold">[{{ community.name }}]</span></p>
+
+<h2>Tag Sets</h2>
+{% for tag_set in tag_sets %}
+<ul>
+    <li>{{ tag_set }}</li>
+    <ul>
+        {% for tag in tag_set.tags.all %}
+        <li>{{ tag }}</li>
+        {% endfor %}
+    </ul>
+</ul>
+{% endfor %}
+
+{% endif %}
+{% endblock %}

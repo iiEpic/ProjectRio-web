@@ -6,6 +6,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import render, redirect, reverse
 from django.views import View
 from frontend.forms import LoginForm, RegisterForm
+from itertools import chain
 
 
 class Communities(View):
@@ -20,7 +21,11 @@ class Communities(View):
             # We are returning the entire community database that isn't marked private
             # Get all communities that are not marked "Private" if the requester is NOT staff
             if not request.user.is_staff:
-                community_list = models.Community.objects.filter(private=False)
+                # User is not staff but try to find private communities the user is apart of
+                user_object = models.RioUser.objects.filter(user=request.user).first()
+                private_list = models.Community.objects.filter(communityuser__user__exact=user_object)
+                public_list = models.Community.objects.filter(private=False)
+                community_list = private_list | public_list
             else:
                 community_list = models.Community.objects.all()
             return render(request, 'frontend/all_communities.html', context={'communities': community_list})
@@ -32,20 +37,23 @@ class Communities(View):
                 if community_object.private and not request.user.is_staff:
                     # Community is private, see if requester has access to it
                     if request.user.is_anonymous:
-                        return render(request, 'frontend/community.html', context={'community': None,
-                                                                                   'community_name': kwargs['name']})
+                        return render(request, 'frontend/view_community.html',
+                                      context={'community': None,
+                                               'community_name': kwargs['name']})
                     community_user_object = models.CommunityUser.objects.filter(
                         user=request.user,
                         community=community_object,
                         banned=False).first()
                     if community_user_object is None:
                         # User does not have access to community
-                        return render(request, 'frontend/community.html', context={'community': None,
+                        return render(request, 'frontend/view_community.html', context={'community': None,
                                                                               'community_name': kwargs['name']})
-                return render(request, 'frontend/community.html', context={'community': community_object})
+                tag_sets = models.TagSet.objects.filter(community=community_object)
+                return render(request, 'frontend/view_community.html',
+                              context={'community': community_object, 'tag_sets': tag_sets})
             else:
                 # Community does not exist
-                return render(request, 'frontend/community.html', context={'community': None,
+                return render(request, 'frontend/view_community.html', context={'community': None,
                                                                            'community_name': kwargs['name']})
 
 
@@ -136,6 +144,67 @@ class Register(View):
             return redirect('frontend:home')
         messages.add_message(request, messages.ERROR, "Form was invalid. Try again", extra_tags='danger')
         return render(request, 'frontend/register.html', context={})
+
+
+class Tags(View):
+    def get(self, request, *args, **kwargs):
+        try:
+            if kwargs['name'][-1] == '/':
+                kwargs['name'] = kwargs['name'][:-1]
+        except IndexError:
+            # Chances are the kwargs is empty, continue as normal
+            pass
+        if kwargs['name'].lower() in ['', 'all']:
+            # We are returning the entire tag database
+            tag_list = models.Tag.objects.all()
+            return render(request, 'frontend/all_tags.html', context={'tags': tag_list})
+        else:
+            # Check if community being requested actually exists
+            tag_object = models.Tag.objects.filter(name__iexact=kwargs['name']).first()
+            if tag_object is not None:
+                # Found Tag, get all public tag sets that it is apart of
+                tag_sets = models.TagSet.objects.filter(tags__name__iexact=tag_object.name)
+                return render(request, 'frontend/view_tag.html',
+                              context={'tag': tag_object, 'tag_sets': tag_sets})
+            else:
+                # Tag does not exist
+                return render(request, 'frontend/view_tag.html',
+                              context={'tag': None, 'tag_name': kwargs['name']})
+
+
+class Tagsets(View):
+    def get(self, request, *args, **kwargs):
+        try:
+            if kwargs['name'][-1] == '/':
+                kwargs['name'] = kwargs['name'][:-1]
+        except IndexError:
+            # Chances are the kwargs is empty, continue as normal
+            pass
+        if kwargs['name'].lower() in ['', 'all']:
+            # We are returning the entire tag database
+            tag_set_list = models.TagSet.objects.all()
+            return render(request, 'frontend/all_tagsets.html', context={'tag_sets': tag_set_list})
+        else:
+            # Check if community being requested actually exists
+            tag_set_object = models.TagSet.objects.filter(name__iexact=kwargs['name']).first()
+            if tag_set_object is not None:
+                # Found Tagset, get community if public
+                if request.user.is_authenticated:
+                    user_object = models.RioUser.objects.filter(user=request.user).first()
+                else:
+                    return render(request, 'frontend/view_tagset.html',
+                                  context={'tag_set': tag_set_object})
+                if tag_set_object.community.private and models.CommunityUser.objects.filter(
+                        user=user_object, community=tag_set_object.community).first() is not None:
+                    community = tag_set_object.community
+                else:
+                    community = None
+                return render(request, 'frontend/view_tagset.html',
+                              context={'tag_set': tag_set_object, 'community': community})
+            else:
+                # Tag does not exist
+                return render(request, 'frontend/view_tagset.html',
+                              context={'tag_set': None, 'tag_set_name': kwargs['name']})
 
 
 class Users(View):

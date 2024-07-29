@@ -16,8 +16,6 @@ class ApiKey(models.Model):
 
 
 class ChemistryTable(models.Model):
-    # Not needed as Django creates an ID field automatically
-    # id = db.Column(db.Integer, primary_key=True)
     mario = models.IntegerField(default=0)
     luigi = models.IntegerField(default=0)
     dk = models.IntegerField(default=0)
@@ -160,7 +158,6 @@ class CommunityUser(models.Model):
 
 
 class Tag(models.Model):
-    community = models.ForeignKey(Community, null=True, on_delete=models.CASCADE)
     name = models.CharField(max_length=32, unique=True)
     tag_type = models.CharField(max_length=16)
     desc = models.CharField(max_length=300)
@@ -172,7 +169,7 @@ class Tag(models.Model):
 
 
 class TagSet(models.Model):
-    community = models.ForeignKey(Community, null=True, on_delete=models.CASCADE)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE)
     tags = models.ManyToManyField(Tag, blank=True)
     name = models.CharField(max_length=120, unique=True)
     type = models.CharField(max_length=120)  # Season, league, tournament.
@@ -407,9 +404,9 @@ class Event(models.Model):
     batter = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE, related_name='event_batter')
     catcher = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE, related_name='event_catcher')
     runner_on_0 = models.ForeignKey(Runner, null=False, on_delete=models.CASCADE, related_name='event_runner_0')
-    runner_on_1 = models.ForeignKey(Runner, null=False, on_delete=models.CASCADE, related_name='event_runner_1')
-    runner_on_2 = models.ForeignKey(Runner, null=False, on_delete=models.CASCADE, related_name='event_runner_2')
-    runner_on_3 = models.ForeignKey(Runner, null=False, on_delete=models.CASCADE, related_name='event_runner_3')
+    runner_on_1 = models.ForeignKey(Runner, null=True, on_delete=models.CASCADE, related_name='event_runner_1')
+    runner_on_2 = models.ForeignKey(Runner, null=True, on_delete=models.CASCADE, related_name='event_runner_2')
+    runner_on_3 = models.ForeignKey(Runner, null=True, on_delete=models.CASCADE, related_name='event_runner_3')
     pitch_summary = models.ForeignKey(PitchSummary, null=True, on_delete=models.CASCADE)
     event_num = models.IntegerField(default=0)
     away_score = models.IntegerField(default=0)

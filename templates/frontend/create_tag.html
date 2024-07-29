@@ -27,9 +27,17 @@ Project Rio - {{ community.name }}
 
 <p>Community page for <span class="fw-bold">[{{ community.name }}]</span></p>
 
-<div>
-    <p>Placeholder, need to update this</p>
-</div>
+<h2>Tag Sets</h2>
+{% for tag_set in tag_sets %}
+<ul>
+    <li>{{ tag_set }}</li>
+    <ul>
+        {% for tag in tag_set.tags.all %}
+        <li>{{ tag }}</li>
+        {% endfor %}
+    </ul>
+</ul>
+{% endfor %}
 
 {% endif %}
 {% endblock %}
