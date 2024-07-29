@@ -35,7 +35,8 @@ class CommunityAdmin(admin.ModelAdmin):
 
 @admin.register(CommunityUser)
 class CommunityUserAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['user', 'community', 'admin', 'invited', 'active', 'banned', 'date_joined']
+    list_filter = ['user', 'community']
 
 
 @admin.register(ContactSummary)

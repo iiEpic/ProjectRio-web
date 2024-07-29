@@ -110,3 +110,5 @@ class FrontEndTests(TestCase):
         self.assertEquals(self.rio_user2.private, True)
         self.assertContains(response, self.rio_user2.username())
         self.assertContains(response, 'Private')
+
+# Create tests for actual registration and login

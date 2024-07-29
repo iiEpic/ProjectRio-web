@@ -31,15 +31,21 @@ def characters(request):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class PopulateDB(View):
+class ImportData(View):
     def get(self, request, *args, **kwargs):
-        return JsonResponse({'endpoint': request.path, 'error': 'This endpoint requires the POST method, not GET'})
+        return JsonResponse({'endpoint': request.path,
+                             'error_code': 'ID-0001',
+                             'error': 'This endpoint requires the POST method, not GET'
+                             })
 
     def post(self, request, *args, **kwargs):
         try:
             json_data = json.loads(request.body)
         except json.decoder.JSONDecodeError:
-            return JsonResponse({'endpoint': request.path, 'error': 'Data posted is not in JSON Schema'})
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0002',
+                                 'error': 'Data posted is not in JSON Schema'
+                                 })
 
         # We need a data validator, probably use a form
 
@@ -47,50 +53,110 @@ class PopulateDB(View):
 
         # Do not allow games from client version 1.9.4 and below
         if version_int < 195:
-            return JsonResponse({'endpoint': request.path, 'error': 'Not accepting games from clients below 1.9.5'})
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0003',
+                                 'error': 'Not accepting games from clients below 1.9.5'
+                                 })
 
         # Ignore game if it's a CPU game
         if json_data['home_player'] == "CPU" or json_data['away_player'] == "CPU":
-            return JsonResponse({'endpoint': request.path, 'error': 'Database does not accept CPU games'})
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0004',
+                                 'error': 'Database does not accept CPU games'
+                                 })
 
         # Check if rio_keys exist in the db and get associated players
-        home_player = models.RioUser.objects.filter(username=json_data['home_player']).first()
-        away_player = models.RioUser.objects.filter(username=json_data['away_player']).first()
+        home_player = models.RioUser.objects.filter(user__username=json_data['home_player']).first()
+        away_player = models.RioUser.objects.filter(user__username=json_data['away_player']).first()
 
         if home_player is None:
             return JsonResponse({'endpoint': request.path,
-                                 'error': f"Player not found in Database, {json_data['home_player']}"})
+                                 'error_code': 'ID-0005',
+                                 'error': f"Player not found in Database, {json_data['home_player']}"
+                                 })
 
         if away_player is None:
             return JsonResponse({'endpoint': request.path,
-                                 'error': f"Player not found in Database, {json_data['away_player']}"})
+                                 'error_code': 'ID-0006',
+                                 'error': f"Player not found in Database, {json_data['away_player']}"
+                                 })
 
-        return HttpResponse('Test')
-        if home_player.verified is False or away_player.verified is False:
-            return abort(411, "Both users must be verified to submit games.")
+        if not home_player.verified:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0007',
+                                 'error': f"Player account is not verified, {json_data['home_player']}"
+                                 })
+
+        if not away_player.verified:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0008',
+                                 'error': f"Player account is not verified, {json_data['away_player']}"
+                                 })
 
         # Detect invalid games
-        innings_selected = request.json['Innings Selected']
-        innings_played = request.json['Innings Played']
-        score_difference = abs(request.json['Home Score'] - request.json['Away Score'])
+        innings_selected = json_data['Innings Selected'] if 'Innings Selected' in json_data.keys() else None
+        if innings_selected is None:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0009',
+                                 'error': f"Innings Selected does not exist in data"
+                                 })
+        innings_played = json_data['Innings Played'] if 'Innings Played' in json_data.keys() else None
+        if innings_played is None:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0010',
+                                 'error': f"Innings Played, does not exist in data"
+                                 })
+        if 'Home Score' not in json_data.keys():
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0011',
+                                 'error': f"Home Score, does not exist in data"
+                                 })
+        if 'Away Score' not in json_data.keys():
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0012',
+                                 'error': f"Away Score, does not exist in data"
+                                 })
+        score_difference = abs(json_data['Home Score'] - json_data['Away Score'])
         is_valid = False if innings_played < innings_selected and score_difference < 10 else True
 
         if innings_played < innings_selected and score_difference < 10:
-            return abort(412, "Invalid Game: Innings Played < Innings Selected & Score Difference < 10")
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0013',
+                                 'error': 'Invalid Game: Innings Played < Innings Selected & Score Difference < 10'
+                                 })
 
-        tag_set = TagSet.query.filter_by(id=request.json['TagSetID']).first()
+        if 'TagSetID' not in json_data.keys():
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0014',
+                                 'error': 'TagSetID, does not exist in data'
+                                 })
+
+        tag_set = models.TagSet.objects.filter(id=json_data['TagSetID']).first()
+        if tag_set is None:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0015',
+                                 'error': f"TagSetID does not exist in database, {json_data['TagSetID']}"
+                                 })
         tag_set_id = tag_set.id
-        if tag_set == None:
-            return abort(413, "Could not find TagSet")
 
         # Confirm that both users are community members for given TagSet
         # Get TagSet obj to verify users
 
-        home_comm_user = CommunityUser.query.filter_by(user_id=home_player.id, community_id=tag_set.community_id).first()
-        away_comm_user = CommunityUser.query.filter_by(user_id=away_player.id, community_id=tag_set.community_id).first()
+        home_comm_user = models.CommunityUser.objects.filter(user__id=home_player.id, community__id=tag_set.community.id).first()
+        away_comm_user = models.CommunityUser.objects.filter(user__id=away_player.id, community__id=tag_set.community.id).first()
 
-        if home_comm_user == None or away_comm_user == None:
-            abort(415, "One or both users are not part of the community for this TagSet.")
+        if home_comm_user is None:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0016',
+                                 'error': f"Home Community User is not part of the community for this TagSet"
+                                 })
+        if away_comm_user is None:
+            return JsonResponse({'endpoint': request.path,
+                                 'error_code': 'ID-0017',
+                                 'error': f"Away Community User is not part of the community for this TagSet"
+                                 })
+
+        return HttpResponse('Test')
 
         # TODO Look into removing this step. GameID SHOULD be guaranteed by checking in ongoing_games now
         # Reroll game id until unique one is found

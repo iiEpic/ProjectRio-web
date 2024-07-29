@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if user is None %}
+Project Rio - No Community
+{% else %}
+Project Rio - {{ community.name }}
+{% endif %}
+{% endblock %}
+
+{% block body %}
+
+{% if community is None %}
+
+<h1>Community does not exist, {{ community_name }}</h1>
+
+{% else %}
+
+{% if community.private %}
+<div class="alert alert-warning alert-dismissible show mt-3 fw-bold" style="width: 95%;" role="alert">
+  <i class="bi bi-exclamation-triangle me-2"></i>Community is private
+</div>
+{% endif %}
+
+<h1>UNDER CONSTRUCTION</h1>
+
+<p>Community page for <span class="fw-bold">[{{ community.name }}]</span></p>
+
+<div>
+    <p>Placeholder, need to update this</p>
+</div>
+
+{% endif %}
+{% endblock %}

@@ -8,10 +8,77 @@ from django.views import View
 from frontend.forms import LoginForm, RegisterForm
 
 
-# Create your views here.
+class Communities(View):
+    def get(self, request, *args, **kwargs):
+        try:
+            if kwargs['name'][-1] == '/':
+                kwargs['name'] = kwargs['name'][:-1]
+        except IndexError:
+            # Chances are the kwargs is empty, continue as normal
+            pass
+        if kwargs['name'].lower() in ['', 'all']:
+            # We are returning the entire community database that isn't marked private
+            # Get all communities that are not marked "Private" if the requester is NOT staff
+            if not request.user.is_staff:
+                community_list = models.Community.objects.filter(private=False)
+            else:
+                community_list = models.Community.objects.all()
+            return render(request, 'frontend/all_communities.html', context={'communities': community_list})
+        else:
+            # Check if community being requested actually exists
+            community_object = models.Community.objects.filter(name__iexact=kwargs['name']).first()
+            if community_object is not None:
+                # Found Community, check if community is private and if the requester is a staff member
+                if community_object.private and not request.user.is_staff:
+                    # Community is private, see if requester has access to it
+                    community_user_object = models.CommunityUser.objects.filter(
+                        user=request.user,
+                        community=community_object,
+                        banned=False).first()
+                    if community_user_object is None:
+                        # User does not have access to community
+                        return render(request, 'frontend/community.html', context={'community': None,
+                                                                              'community_name': kwargs['name']})
+                return render(request, 'frontend/community.html', context={'community': community_object})
+            else:
+                # Community does not exist
+                return render(request, 'frontend/community.html', context={'community': None,
+                                                                           'community_name': kwargs['name']})
+
+
 class Home(View):
     def get(self, request):
         return render(request, 'frontend/home.html', context={})
+
+
+class Login(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            # User is logged in, send them to homepage
+            return redirect('frontend:home')
+        else:
+            return render(request, 'frontend/login.html', context={})
+
+    def post(self, request, *args, **kwargs):
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                # User is logged in, send them to homepage
+                return redirect('frontend:home')
+        messages.add_message(request, messages.ERROR, "Wrong username or password.", extra_tags='danger')
+        return render(request, 'frontend/login.html', context={})
+
+
+class Logout(View):
+    def get(self, request):
+        # Log the user out
+        logout(request)
+        # Send them to the homepage
+        return redirect('frontend:home')
 
 
 class Register(View):
@@ -66,36 +133,6 @@ class Register(View):
             return redirect('frontend:home')
         messages.add_message(request, messages.ERROR, "Form was invalid. Try again", extra_tags='danger')
         return render(request, 'frontend/register.html', context={})
-
-
-class Login(View):
-    def get(self, request):
-        if request.user.is_authenticated:
-            # User is logged in, send them to homepage
-            return redirect('frontend:home')
-        else:
-            return render(request, 'frontend/login.html', context={})
-
-    def post(self, request, *args, **kwargs):
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
-                login(request, user)
-                # User is logged in, send them to homepage
-                return redirect('frontend:home')
-        messages.add_message(request, messages.ERROR, "Wrong username or password.", extra_tags='danger')
-        return render(request, 'frontend/login.html', context={})
-
-
-class Logout(View):
-    def get(self, request):
-        # Log the user out
-        logout(request)
-        # Send them to the homepage
-        return redirect('frontend:home')
 
 
 class Users(View):
