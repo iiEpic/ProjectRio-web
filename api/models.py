@@ -1,10 +1,29 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.conf import settings
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+import rest_framework.authtoken.models
 
 
-# Create your models here.
+class Token(rest_framework.authtoken.models.Token):
+    key = models.CharField(_("Key"), max_length=40, db_index=True, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name='auth_tokens',
+        on_delete=models.CASCADE, verbose_name=_("User")
+    )
+    name = models.CharField(_("Name"), max_length=64)
+
+    class Meta:
+        unique_together = (('user', 'name'),)
+
+    def __str__(self):
+        return f"{self.user} : {self.name}"
+
+
 class ApiKey(models.Model):
-    api_key = models.CharField(max_length=50, unique=True)
+    token = models.OneToOneField(Token, on_delete=models.CASCADE, unique=True)
     date_created = models.DateTimeField(auto_created=True, auto_now=True)
     pings_daily = models.IntegerField(default=1)
     pings_weekly = models.IntegerField(default=7)
@@ -12,7 +31,7 @@ class ApiKey(models.Model):
     total_pings = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.api_key
+        return self.token.key
 
 
 class ChemistryTable(models.Model):
@@ -110,7 +129,7 @@ class UserGroup(models.Model):
     weekly_limit = models.IntegerField(default=0)
     sponsor_limit = models.IntegerField(default=0)
     name = models.CharField(max_length=32, unique=True)
-    desc = models.CharField(max_length=128)
+    description = models.CharField(max_length=128, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -120,7 +139,7 @@ class RioUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     api_key = models.ForeignKey(ApiKey, blank=True, null=True, on_delete=models.CASCADE)
     user_group = models.ManyToManyField(UserGroup, blank=True)
-    rio_key = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    rio_key = models.OneToOneField(Token, blank=True, null=True, on_delete=models.CASCADE)
     active_url = models.CharField(max_length=50, unique=True, blank=True, null=True)
     private = models.BooleanField(default=False)
     verified = models.BooleanField(default=False)
@@ -188,7 +207,7 @@ class CommunityUser(models.Model):
 class Tag(models.Model):
     name = models.CharField(max_length=32, unique=True)
     tag_type = models.CharField(max_length=16)
-    desc = models.CharField(max_length=300)
+    description = models.CharField(max_length=300)
     active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_created=True, auto_now=True)
 
@@ -200,7 +219,7 @@ class Tag(models.Model):
             'id': self.pk,
             'name': self.name,
             'type': self.tag_type,
-            'desc': self.desc,
+            'desc': self.description,
             'active': self.active,
             'date_created': self.date_created
         }

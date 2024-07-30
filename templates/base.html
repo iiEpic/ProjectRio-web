@@ -144,18 +144,22 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <ul>
-                                        <li class="fw-bold">API Key</li>
-                                        <ul>
-                                            <li class="user-select-all">{% get_user_api_key request.user.username %}</li>
-                                        </ul>
-                                    </ul>
-                                    <ul>
-                                        <li class="fw-bold">RIO Key</li>
-                                        <ul>
-                                            <li class="user-select-all">{% get_user_rio_key request.user.username %}</li>
-                                        </ul>
-                                    </ul>
+                                    <div class="card mb-3">
+                                        <div class="card-header fw-bold">
+                                            API Key <button type="button" class="btn btn-outline-danger btn-sm float-end">Regenerate</button>
+                                        </div>
+                                        <div class="card-body">
+                                            <code class="user-select-all">{% get_user_api_key request.user.username %}</code>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-header fw-bold">
+                                            Rio Key <button type="button" class="btn btn-outline-danger btn-sm float-end">Regenerate</button>
+                                        </div>
+                                        <div class="card-body">
+                                            <code class="user-select-all">{% get_user_rio_key request.user.username %}</code>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

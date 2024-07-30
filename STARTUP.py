@@ -26,11 +26,15 @@ def create_hidden_env():
         # Check if we have superuser password in there
         with open('.env', 'r') as f:
             data = f.read()
-            if not re.search('DJANGO_SUPERUSER_PASSWORD', data):
-                password = ''.join(
-                    secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
+
+        if not re.search('DJANGO_SUPERUSER_PASSWORD', data):
+            password = ''.join(
+                secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
+            with open('.env', 'a+') as f:
                 f.write(f'DJANGO_SUPERUSER_PASSWORD={password}')
-        os.environ['DJANGO_SUPERUSER_PASSWORD'] = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', data).group(1)
+        else:
+            password = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', data).group(1)
+        os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
 
 
 def create_rio_user():
@@ -56,6 +60,11 @@ def install_pip_packages():
     subprocess.run(['venv/bin/python', '-m', 'pip', 'install', '-r', 'requirements.txt'])
 
 
+def populate_db():
+    print('Populating database with default data...')
+    subprocess.run(['venv/bin/python', 'manage.py', 'db_setup'])
+
+
 def start_webserver():
     print('Starting webserver...')
     subprocess.run(['venv/bin/python', 'manage.py', 'runserver'])
@@ -79,6 +88,9 @@ def main():
 
     # Create RioUser
     create_rio_user()
+
+    # Populate database with default data
+    populate_db()
 
     # Start webserver
     start_webserver()

@@ -1,13 +1,10 @@
 import json
-from api import models
+from api.authentication import TokenAuthentication
 from api.helpers import *
-from django.shortcuts import render, HttpResponse
+from django.contrib.auth import get_user_model
 from django.http import JsonResponse
-from django.utils.decorators import method_decorator
-from django.views import View
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.shortcuts import render, HttpResponse
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -35,8 +32,9 @@ def characters(request):
     return HttpResponse("<h1>Characters page was found</h1>")
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class ImportData(View):
+class ImportData(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         return JsonResponse({'endpoint': request.path,
                              'error_code': 'ID-0001',
@@ -607,10 +605,11 @@ class GenericView(APIView):
     GET: Returns all or specific specified object
     POST: Creates specified object
     """
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TokenAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        print(request.user)
         mapping = {
             'tag': 'Tag',
             'tagset': 'TagSet',
@@ -629,84 +628,3 @@ class GenericView(APIView):
         }
         return JsonResponse(generic_post_request_json(model_name=mapping.get(request.path.split('/')[3]),
                                                       request=request, **kwargs))
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class Tag(View):
-    """
-    This will get or create a Tag
-    GET: Returns all or specific Tag
-    POST: Creates Tag
-    """
-    def get(self, request, *args, **kwargs):
-        return JsonResponse(generic_get_request_json(model_name='Tag', request=request, **kwargs))
-
-    def post(self, request, *args, **kwargs):
-        try:
-            json_data = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return JsonResponse({'endpoint': request.path,
-                                 'error_code': 'ID-0002',
-                                 'error': 'Data posted is not in JSON Schema'
-                                 })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class TagSet(View):
-    """
-    This will get or create a TagSet
-    GET: Returns all or specific TagSet
-    POST: Creates TagSet
-    """
-    def get(self, request, *args, **kwargs):
-        return JsonResponse(generic_get_request_json(model_name='TagSet', request=request, **kwargs))
-
-    def post(self, request, *args, **kwargs):
-        try:
-            json_data = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return JsonResponse({'endpoint': request.path,
-                                 'error_code': 'ID-0002',
-                                 'error': 'Data posted is not in JSON Schema'
-                                 })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class Community(View):
-    """
-    This will get or create a Community
-    GET: Returns all or specific Community
-    POST: Creates Community
-    """
-    def get(self, request, *args, **kwargs):
-        return JsonResponse(generic_get_request_json(model_name='Community', request=request, **kwargs))
-
-    def post(self, request, *args, **kwargs):
-        try:
-            json_data = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return JsonResponse({'endpoint': request.path,
-                                 'error_code': 'ID-0002',
-                                 'error': 'Data posted is not in JSON Schema'
-                                 })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class CommunityUser(View):
-    """
-    This will get or create a CommunityUser
-    GET: Returns all or specific CommunityUser
-    POST: Creates CommunityUser
-    """
-    def get(self, request, *args, **kwargs):
-        return JsonResponse(generic_get_request_json(model_name='Community', request=request, **kwargs))
-
-    def post(self, request, *args, **kwargs):
-        try:
-            json_data = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return JsonResponse({'endpoint': request.path,
-                                 'error_code': 'ID-0002',
-                                 'error': 'Data posted is not in JSON Schema'
-                                 })
-

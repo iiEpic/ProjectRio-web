@@ -65,11 +65,11 @@ Project Rio - Communities
         <tr>
             <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:communities' community.name %}" class="link-light">{{ community.name }}</a></th>
             <td class="col-md-2">{{ community.date_created }}</td>
-            <td class="col-md-2">{{ community.desc }}</td>
-            <td class="col-md-2">{{ community.private }}</td>
+            <td class="col-md-2">{{ community.description }}</td>
+            <td class="col-md-1">{{ community.private }}</td>
             <td class="col-md-2">{{ community.active_tag_set_limit }}</td>
-            <td class="col-md-2">{{ community.comm_type }}</td>
-            <td class="col-md-2">{{ community.active_url }}</td>
+            <td class="col-md-1">{{ community.community_type }}</td>
+            <td class="col-md-4">{{ community.active_url }}</td>
         </tr>
         {% endfor %}
     </tbody>

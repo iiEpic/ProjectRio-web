@@ -5,7 +5,11 @@ from api.models import *
 # Register your models here.
 @admin.register(ApiKey)
 class ApiKeyAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['token', 'get_user', 'pings_daily', 'pings_weekly', 'total_pings', 'last_ping_date', 'date_created']
+
+    @admin.display(description='User')
+    def get_user(self, object):
+        return object.token.user
 
 
 @admin.register(Character)
@@ -86,7 +90,7 @@ class PitchSummaryAdmin(admin.ModelAdmin):
 
 @admin.register(RioUser)
 class RioUserAdmin(admin.ModelAdmin):
-    pass
+    filter_horizontal = ['user_group']
 
 
 @admin.register(Runner)
@@ -96,6 +100,11 @@ class RunnerAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Token)
+class TokenAdmin(admin.ModelAdmin):
     pass
 
 
