@@ -20,6 +20,9 @@ class Communities(View):
         if kwargs['name'].lower() in ['', 'all']:
             # We are returning the entire community database that isn't marked private
             # Get all communities that are not marked "Private" if the requester is NOT staff
+            if request.user.is_anonymous:
+                public_list = models.Community.objects.filter(private=False)
+                return render(request, 'frontend/all_communities.html', context={'communities': public_list})
             if not request.user.is_staff:
                 # User is not staff but try to find private communities the user is apart of
                 user_object = models.RioUser.objects.filter(user=request.user).first()
