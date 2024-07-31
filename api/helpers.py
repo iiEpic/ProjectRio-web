@@ -1,3 +1,4 @@
+import re
 import secrets
 
 from api import forms, models
@@ -25,6 +26,9 @@ def get_all_objects_dict(model_name):
 
 
 def generic_get_request_json(model_name, **kwargs):
+    if model_name == 'Community':
+        return get_community(**kwargs)
+
     try:
         if kwargs['name'][-1] == '/':
             kwargs['name'] = kwargs['name'][:-1]
@@ -302,3 +306,68 @@ def create_community(form, request):
     }
 
     return content
+
+
+def get_community(request, **kwargs):
+    def remove_duplicates(dict_list):
+        seen = set()
+        unique_dicts = []
+        for d in dict_list:
+            t = tuple(sorted(d.items()))  # Convert dictionary to a sorted tuple of its items
+            if t not in seen:
+                seen.add(t)
+                unique_dicts.append(d)
+        return unique_dicts
+
+    rio_user_object = models.RioUser.objects.filter(user=request.user).first()
+    try:
+        if kwargs['name'][-1] == '/':
+            kwargs['name'] = kwargs['name'][:-1]
+    except IndexError:
+        # Chances are the kwargs is empty, continue as normal
+        pass
+    if kwargs['name'].lower() in ['', 'all']:
+
+        community_list = []
+        # Get all public communities
+        [community_list.append(i.to_dict()) for i in models.Community.objects.filter(private=False)]
+
+        # Get all private communities the user has access to
+        [community_list.append(i.community.to_dict()) for i in models.CommunityUser.objects.filter(user=rio_user_object)]
+
+        return {'endpoint': request.path, 'results': remove_duplicates(community_list)}
+    else:
+        model_object = models.Community.objects.filter(name__iexact=kwargs['name']).first()
+        if model_object is not None:
+            # Check if user has access to this community
+            if model_object.private and models.CommunityUser.objects.filter(user=rio_user_object, community=model_object).first() is None:
+                # User does not have access
+                return {'endpoint': request.path,
+                        'results': 'error',
+                        'error_code': 'COMMUNITY_NOT_FOUND',
+                        'error': f"Community does not exist, {kwargs['name']}",
+                        }
+            return {'endpoint': request.path, 'results': model_object.to_dict()}
+        else:
+            if kwargs['name'].isnumeric():
+                model_object = models.Community.objects.filter(pk=kwargs['name']).first()
+                if model_object is not None:
+                    # Check if user has access to this community
+                    if model_object.private and models.CommunityUser.objects.filter(user=rio_user_object,
+                                                           community=model_object).first() is None:
+                        # User does not have access
+                        return {'endpoint': request.path,
+                                             'results': 'error',
+                                             'error_code': 'COMMUNITY_NOT_FOUND',
+                                             'error': f"Community does not exist, {kwargs['name']}",
+                                             }
+                    return {'endpoint': request.path, 'results': model_object.to_dict()}
+            return {'endpoint': request.path,
+                    'results': 'error',
+                    'error_code': f'COMMUNITY_NULL',
+                    'error': f"Community requested does not exist, {kwargs['name']}"
+                    }
+
+
+def validate_gecko_code(in_str):
+    return bool(re.match(r'^([A-Fa-f0-9]{8} [A-Fa-f0-9]{8}\n)*[A-Fa-f0-9]{8} [A-Fa-f0-9]{8}$', in_str))

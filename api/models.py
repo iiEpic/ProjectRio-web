@@ -158,7 +158,7 @@ class Community(models.Model):
     community_type = models.CharField(max_length=16, help_text='Official, Unofficial')
     private = models.BooleanField(default=True)
     active_tag_set_limit = models.IntegerField(default=5)
-    active_url = models.CharField(max_length=50, unique=True)
+    active_url = models.CharField(max_length=50, blank=True, null=True, unique=True)
     description = models.CharField(max_length=300, blank=True, null=True)
     date_created = models.DateTimeField(auto_created=True, auto_now=True)
 
