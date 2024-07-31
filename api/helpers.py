@@ -1,3 +1,5 @@
+import secrets
+
 from api import forms, models
 
 
@@ -13,11 +15,11 @@ def get_all_objects(model_name):
         return None
 
 
-def get_all_objects_json(model_name):
+def get_all_objects_dict(model_name):
     objects_list = get_all_objects(model_name)
     if objects_list is not None:
-        json_list = [i.to_json() for i in objects_list]
-        return json_list
+        dict_list = [i.to_dict() for i in objects_list]
+        return dict_list
     else:
         return None
 
@@ -31,20 +33,20 @@ def generic_get_request_json(model_name, **kwargs):
         pass
     if kwargs['name'].lower() in ['', 'all']:
         return {'endpoint': kwargs['request'].path,
-                'results': get_all_objects_json(model_name)
+                'results': get_all_objects_dict(model_name)
                 }
     else:
         model_object = getattr(models, model_name).objects.filter(name__iexact=kwargs['name']).first()
         if model_object is not None:
             return {'endpoint': kwargs['request'].path,
-                    'results': model_object.to_json()
+                    'results': model_object.to_dict()
                     }
         else:
             if kwargs['name'].isnumeric():
                 model_object = getattr(models, model_name).objects.filter(pk=kwargs['name']).first()
                 if model_object is not None:
                     return {'endpoint': kwargs['request'].path,
-                            'results': model_object.to_json()
+                            'results': model_object.to_dict()
                             }
             return {'endpoint': kwargs['request'].path,
                     'results': 'error',
@@ -59,13 +61,21 @@ def generic_post_request_json(model_name, **kwargs):
         if form.is_valid():
             return globals()[f'create_{model_name.lower()}'](form, kwargs['request'])
         else:
+            fields = {
+                'required': [],
+                'optional': []
+            }
+            for field in form:
+                if field.field.required:
+                    fields['required'].append(field.name)
+                else:
+                    fields['optional'].append(field.name)
             return {'endpoint': kwargs['request'].path,
                     'results': 'error',
                     'error_code': f'{model_name.upper()}_INVALID_FORM',
                     'error': f"Data provided is not valid for creation of, {model_name}",
                     'form_errors': form.errors,
-                    'required_fields': list(form.fields.keys())
-                    }
+                    } | fields
     else:
         return {'endpoint': kwargs['request'].path,
                 'results': 'error',
@@ -87,13 +97,21 @@ def create_tag(form, request):
                 'error_code': f'TAG_EXISTING',
                 'error': f"A Tag with that name already exists, {form.cleaned_data['name']}",
                 }
+    community_object = models.Community.objects.filter(pk=form.cleaned_data['community_id']).first()
+    if community_object is None:
+        return {'endpoint': request.path,
+                'results': 'error',
+                'error_code': f'TAG_COMMUNITY_DOES_NOT_EXIST',
+                'error': f"A Community with the ID, {form.cleaned_data['community_id']}, does not exist",
+                }
     tag_object = models.Tag.objects.create(
         name=form.cleaned_data['name'],
         tag_type=form.cleaned_data['type'],
-        desc=form.cleaned_data['description']
+        description=form.cleaned_data['description'],
+        community=community_object
     )
     return {'endpoint': request.path,
-            'results': tag_object.to_json()
+            'results': tag_object.to_dict()
             }
 
 
@@ -166,32 +184,121 @@ def create_tagset(form, request):
             }
 
 
-def create_community(form, path):
-    print(form.cleaned_data['name'])
-    print(form.cleaned_data['sponsor_id'])
-    print(form.cleaned_data['community_type'])
-    print(form.cleaned_data['private'])
-    print(form.cleaned_data['description'])
+def create_community(form, request):
+    # Check if community name is alphanumeric
+    if not form.cleaned_data['name'].isalnum():
+        return {'endpoint': request.path,
+                'results': 'error',
+                'error_code': f'COMMUNITY_NAME_ALPHANUMERIC',
+                'error': "The Community name provided is not alphanumeric",
+                }
+
     # Check if community already exists with that name
-    community_object = models.Community.objects.filter(name=form.cleaned_data['name']).first()
+    community_object = models.Community.objects.filter(name__iexact=form.cleaned_data['name']).first()
     if community_object is not None:
-        return {'endpoint': path,
+        return {'endpoint': request.path,
                 'results': 'error',
                 'error_code': f'COMMUNITY_EXISTING',
                 'error': f"A Community with that name already exists, {form.cleaned_data['name']}",
                 }
-    rio_user = models.RioUser.objects.filter(pk=form.cleaned_data['sponsor_id']).first()
-    if rio_user is None:
-        return {'endpoint': path,
+
+    # Check if community type is valid
+    if not models.Community().is_valid_type(form.cleaned_data['community_type']):
+        return {'endpoint': request.path,
                 'results': 'error',
-                'error_code': f'COMMUNITY_NULL_SPONSOR',
-                'error': f"Sponsor with ID, {form.cleaned_data['sponsor_id']}, does not exist",
+                'error_code': f'COMMUNITY_INVALID_TYPE',
+                'error': f"Community type, {form.cleaned_data['community_type']}, is invalid",
+                'valid_types': [i.title() for i in models.Community().valid_types],
                 }
-    community_object = models.Community(
+
+    # If official community type selected, check if admin
+    rio_user_object = models.RioUser.objects.filter(user=request.user).first()
+    if form.cleaned_data['community_type'].lower() == 'official':
+        if rio_user_object.user_group.filter(name='Admin').first() is None:
+            # User is not admin
+            return {'endpoint': request.path,
+                    'results': 'error',
+                    'error_code': f'COMMUNITY_NON_Admin',
+                    'error': f"Non-administrator account cannot create Official communities"
+                    }
+
+    patreon_tiers = ['Patron: Fan', 'Patron: Rookie', 'Patron: MVP', 'Patron: Hall of Famer', 'Admin']
+
+    if len(rio_user_object.user_group.filter(name__in=patreon_tiers)) == 0:
+        return {'endpoint': request.path,
+                'results': 'error',
+                'error_code': f'COMMUNITY_NON_PATRON',
+                'error': f"Community creation is restricted to patrons"
+                }
+
+    # Check if community name matches a tag
+    tag = models.Tag.objects.filter(name__iexact=form.cleaned_data['name']).first()
+    if tag is not None:
+        return {'endpoint': request.path,
+                'results': 'error',
+                'error_code': f'COMMUNITY_MATCHES_TAG',
+                'error': f"Community name is already in use by a Tag"
+                }
+
+    # Check if community name matches a tagset (Gamemode)
+    tagset = models.TagSet.objects.filter(name__iexact=form.cleaned_data['name']).first()
+    if tagset is not None:
+        return {'endpoint': request.path,
+                'results': 'error',
+                'error_code': f'COMMUNITY_MATCHES_TAGSET',
+                'error': f"Community name is already in use by a TagSet (Gamemode)"
+                }
+
+    # Check if user has exceeded their sponsor limit
+    communities_sponsored = models.Community.objects.filter(sponsor=rio_user_object)
+
+    sponsor_limit = 0
+    for group in rio_user_object.user_group.all():
+        sponsor_limit += group.sponsor_limit
+
+    if len(communities_sponsored) >= sponsor_limit:
+        return {'endpoint': request.path,
+                'results': 'error',
+                'error_code': f'COMMUNITY_EXCEEDED_SPONSOR_LIMIT',
+                'error': f"Patron has reached limit of sponsored communities",
+                'number_communities_sponsored': len(communities_sponsored),
+                'sponsor_limit': sponsor_limit,
+                'communities_sponsored': [i.name for i in communities_sponsored],
+                }
+
+    # Create Community
+    community_object = models.Community.objects.create(
         name=form.cleaned_data['name'],
-        sponsor=form.cleaned_data['type'],
-        desc=form.cleaned_data['description']
+        sponsor=rio_user_object,
+        community_type=form.cleaned_data['community_type'].title(),
+        private=bool(form.cleaned_data['private']),
+        active_url=(secrets.token_urlsafe(32) if form.cleaned_data['global_link'] or not bool(form.cleaned_data['private']) else None),
+        description=form.cleaned_data['description']
     )
-    return {'endpoint': path,
-            'results': tag_object.to_json()
-            }
+
+    # Create CommunityUser (admin)
+    community_user_object = models.CommunityUser.objects.create(
+        user=rio_user_object,
+        community=community_object,
+        admin=True,
+        active=True
+    )
+
+    # Create Community Tag
+    new_community_tag = models.Tag.objects.create(
+        name=community_object.name,
+        community=community_object,
+        tag_type='Community',
+        description=f'Community tag for {community_object.name}'
+    )
+
+    content = {
+        'endpoint': request.path,
+        'results': {
+            'community': community_object.to_dict(),
+            'community_user': community_user_object.to_dict(),
+            'community_tag': new_community_tag.to_dict()
+        }
+    }
+
+    return content

@@ -5,6 +5,7 @@ class TagForm(forms.Form):
     name = forms.CharField(label='Name', max_length=32)
     type = forms.CharField(label='Tag Type', max_length=16)
     description = forms.CharField(label='Description', max_length=300)
+    community_id = forms.IntegerField(label='Community ID')
 
 
 class TagSetForm(forms.Form):
@@ -18,8 +19,9 @@ class TagSetForm(forms.Form):
 
 class CommunityForm(forms.Form):
     name = forms.CharField(label='Name', max_length=32)
-    sponsor_id = forms.IntegerField(label='Sponsor ID')
     community_type = forms.CharField(label='Community Type', max_length=16)
-    private = forms.BooleanField(label='Private')
+    private = forms.IntegerField(label='Private')
+    global_link = forms.IntegerField(label='Global Link', required=False)
     description = forms.CharField(label='Description', max_length=300)
+
 

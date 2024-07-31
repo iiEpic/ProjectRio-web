@@ -155,15 +155,22 @@ class RioUser(models.Model):
 class Community(models.Model):
     name = models.CharField(max_length=32, unique=True)
     sponsor = models.ForeignKey(RioUser, null=True, on_delete=models.CASCADE)
-    community_type = models.CharField(max_length=16, help_text='Season, League, or Tournament')
+    community_type = models.CharField(max_length=16, help_text='Official, Unofficial')
     private = models.BooleanField(default=True)
-    active_tag_set_limit = models.IntegerField(default=0)
+    active_tag_set_limit = models.IntegerField(default=5)
     active_url = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=300, blank=True, null=True)
     date_created = models.DateTimeField(auto_created=True, auto_now=True)
 
+    valid_types = ['official', 'unofficial']
+
     def __str__(self):
         return self.name
+
+    def is_valid_type(self, content):
+        if content.lower() in self.valid_types:
+            return True
+        return False
 
     def to_dict(self):
         return {
@@ -212,8 +219,15 @@ class Tag(models.Model):
     active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_created=True, auto_now=True)
 
+    valid_types = ['component', 'competition', 'community', 'client code', 'gecko code', 'test']
+
     def __str__(self):
         return self.name
+
+    def is_valid_type(self, content):
+        if content.lower() in self.valid_types:
+            return True
+        return False
 
     def to_dict_old(self):
         return {
@@ -243,12 +257,19 @@ class TagSet(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
     tags = models.ManyToManyField(Tag, blank=True)
     name = models.CharField(max_length=120, unique=True)
-    type = models.CharField(max_length=120)  # Season, league, tournament.
+    type = models.CharField(max_length=120, help_text='Season, League, or Tournament')  # Season, league, tournament.
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 
+    valid_types = ['season', 'league', 'tournament']
+
     def __str__(self):
         return self.name
+
+    def is_valid_type(self, content):
+        if content.lower() in self.valid_types:
+            return True
+        return False
 
     def to_dict(self):
         return {
