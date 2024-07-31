@@ -100,41 +100,43 @@ class Command(BaseCommand):
             )
 
     def create_default_tags(self):
-        #     name els.CharField(max_length=32, unique=True)
-        #     tag_type = models.CharField(max_length=16)
-        #     desc = models.CharField(max_length=300)
-        #     active = models.BooleanField(default=True)
-        #     date_created = mod
+        project_rio_community = models.Community.objects.filter(name='ProjectRio').first()
         tags = [
             {
                 'name': 'Ranked',
                 'description': 'Tag for Ranked games',
-                'tag_type': 'Global'
+                'tag_type': 'Global',
+                'community': project_rio_community
             },
             {
                 'name': 'Unranked',
                 'description': 'Tag for Unranked games',
-                'tag_type': 'Global'
+                'tag_type': 'Global',
+                'community': project_rio_community
             },
             {
                 'name': 'Superstar',
                 'description': 'Tag for Stars On',
-                'tag_type': 'Global'
+                'tag_type': 'Global',
+                'community': project_rio_community
             },
             {
                 'name': 'Normal',
                 'description': 'Tag for Normal games',
-                'tag_type': 'Global'
+                'tag_type': 'Global',
+                'community': project_rio_community
             },
             {
                 'name': 'Netplay',
                 'description': 'Tag for Netplay games',
-                'tag_type': 'Global'
+                'tag_type': 'Global',
+                'community': project_rio_community
             },
             {
                 'name': 'Local',
                 'description': 'Tag for Local games',
-                'tag_type': 'Global'
+                'tag_type': 'Global',
+                'community': project_rio_community
             }
         ]
 
@@ -191,7 +193,7 @@ class Command(BaseCommand):
 
     def create_official_infrastructure(self):
         admin_user = self.create_admin_users()
-        self.create_official_comms(admin_user)
+        self.create_official_community(admin_user)
 
     def create_admin_users(self):
         admin_backend_user = get_user_model().objects.filter(username='ProjectRio').first()
@@ -218,7 +220,7 @@ class Command(BaseCommand):
 
         return admin_user
 
-    def create_official_comms(self, admin_user):
+    def create_official_community(self, admin_user):
         new_comm = models.Community.objects.filter(name='ProjectRio').first()
         if new_comm is None:
             new_comm = models.Community.objects.create(
@@ -245,12 +247,13 @@ class Command(BaseCommand):
         # === Create Community Tag ===
         models.Tag.objects.get_or_create(
             name=new_comm.name,
+            community=new_comm,
             tag_type='Community',
             description=f"Community tag for {new_comm.name}"
         )
 
     def handle(self, *args, **options):
         self.create_characters()
-        self.create_default_tags()
         self.create_default_groups()
         self.create_official_infrastructure()
+        self.create_default_tags()

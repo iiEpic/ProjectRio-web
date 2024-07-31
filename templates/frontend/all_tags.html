@@ -43,37 +43,45 @@ Project Rio - Tags
 
 
 {% block body %}
-<h1>All Tags</h1>
-<div class="form-floating mb-3" style="width: 95%;">
-  <input type="text" class="form-control" id="searchInput" placeholder="Search for tag" onkeyup="searchTable()">
-  <label for="searchInput">Search for tag</label>
+<div class="card mt-3">
+    <div class="card-header">
+        <div>
+            <span class="display-5">All Tags</span>
+            <div class="form-floating w-25 float-end">
+              <input type="text" class="form-control" id="searchInput" placeholder="Search for tag" onkeyup="searchTable()">
+              <label for="searchInput">Search for tag</label>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-3">Name</th>
+                    <th scope="col">Active</th>
+                    <th scope="col">Date Created</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Gecko Code</th>
+                    <th scope="col">Gecko Code Desc</th>
+                    <th scope="col">Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in tags %}
+                <tr>
+                    <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-light">{{ tag.name }}</a></th>
+                    <td class="col-md-1">{{ tag.active }}</td>
+                    <td class="col-md-2">{{ tag.date_created }}</td>
+                    <td class="col-md-2">{{ tag.description }}</td>
+                    <td class="col-md-1">12345678</td>
+                    <td class="col-md-2">Fake Gecko Code Description</td>
+                    <td class="col-md-1">{{ tag.tag_type }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
-<table class="table table-dark table-hover" style="width:95%;">
-    <thead>
-        <tr>
-            <th scope="col" class="ps-3">Name</th>
-            <th scope="col">Active</th>
-            <th scope="col">Date Created</th>
-            <th scope="col">Description</th>
-            <th scope="col">Gecko Code</th>
-            <th scope="col">Gecko Code Desc</th>
-            <th scope="col">Type</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for tag in tags %}
-        <tr>
-            <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-light">{{ tag.name }}</a></th>
-            <td class="col-md-1">{{ tag.active }}</td>
-            <td class="col-md-2">{{ tag.date_created }}</td>
-            <td class="col-md-2">{{ tag.description }}</td>
-            <td class="col-md-1">12345678</td>
-            <td class="col-md-2">Fake Gecko Code Description</td>
-            <td class="col-md-1">{{ tag.tag_type }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}
 
 {% block end_body_script %}

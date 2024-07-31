@@ -43,37 +43,45 @@ Project Rio - Communities
 
 
 {% block body %}
-<h1>All Communities</h1>
-<div class="form-floating mb-3" style="width: 95%;">
-  <input type="text" class="form-control" id="searchInput" placeholder="Search for community" onkeyup="searchTable()">
-  <label for="searchInput">Search for community</label>
+<div class="card mt-3">
+    <div class="card-header">
+        <div>
+            <span class="display-5">All Communities</span>
+            <div class="form-floating w-25 float-end">
+              <input type="text" class="form-control" id="searchInput" placeholder="Search for community" onkeyup="searchTable()">
+              <label for="searchInput">Search for community</label>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-3">Name</th>
+                    <th scope="col">Date Created</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Private</th>
+                    <th scope="col">Tag Set Limit</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for community in communities %}
+                <tr>
+                    <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:communities' community.name %}" class="link-light">{{ community.name }}</a></th>
+                    <td class="col-md-2">{{ community.date_created }}</td>
+                    <td class="col-md-2">{{ community.description }}</td>
+                    <td class="col-md-1">{{ community.private }}</td>
+                    <td class="col-md-2">{{ community.active_tag_set_limit }}</td>
+                    <td class="col-md-1">{{ community.community_type }}</td>
+                    <td class="col-md-4">{{ community.active_url }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
-<table class="table table-dark table-hover" style="width:95%;">
-    <thead>
-        <tr>
-            <th scope="col" class="ps-3">Name</th>
-            <th scope="col">Date Created</th>
-            <th scope="col">Description</th>
-            <th scope="col">Private</th>
-            <th scope="col">Tag Set Limit</th>
-            <th scope="col">Type</th>
-            <th scope="col">URL</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for community in communities %}
-        <tr>
-            <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:communities' community.name %}" class="link-light">{{ community.name }}</a></th>
-            <td class="col-md-2">{{ community.date_created }}</td>
-            <td class="col-md-2">{{ community.description }}</td>
-            <td class="col-md-1">{{ community.private }}</td>
-            <td class="col-md-2">{{ community.active_tag_set_limit }}</td>
-            <td class="col-md-1">{{ community.community_type }}</td>
-            <td class="col-md-4">{{ community.active_url }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}
 
 {% block end_body_script %}

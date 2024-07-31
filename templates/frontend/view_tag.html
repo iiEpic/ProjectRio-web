@@ -16,47 +16,54 @@ Project Rio - {{ tag.name }}
 <h1>Tag does not exist, {{ tag_name }}</h1>
 
 {% else %}
-
-<h1>Tag page for <span class="fw-bold">[{{ tag.name }}]</span></h1>
-<table class="table table-dark table-hover mt-3" style="width: 95%;">
-    <tr>
-        <th>Variable Name</th>
-        <th>Variable Value</th>
-    </tr>
-    <tr>
-        <td>Date Created</td>
-        <td>{{ tag.date_created }}</td>
-    </tr>
-    <tr>
-        <td>Tag Type</td>
-        <td>{{ tag.tag_type }}</td>
-    </tr>
-    <tr>
-        <td>Active</td>
-        <td>{{ tag.active }}</td>
-    </tr>
-    <tr>
-        <td>Description</td>
-        <td>{{ tag.description }}</td>
-    </tr>
-</table>
-<h2 class="mt-5">Tag Sets</h2>
-<table class="table table-dark table-hover" style="width:95%;">
-    <thead>
-        <tr>
-            <th scope="col" class="ps-3">Name</th>
-            <th scope="col">Type</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for tag_set in tag_sets %}
-        <tr>
-            <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tagsets' tag_set.name %}" class="link-light">{{ tag_set.name }}</a></th>
-            <td class="col-md-2">{{ tag_set.type }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="card mt-3">
+    <div class="card-header">
+        <div>
+            <span class="display-5">{{ tag.name }} Tag</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-dark table-hover mt-3">
+            <tr>
+                <th>Variable Name</th>
+                <th>Variable Value</th>
+            </tr>
+            <tr>
+                <td>Date Created</td>
+                <td>{{ tag.date_created }}</td>
+            </tr>
+            <tr>
+                <td>Tag Type</td>
+                <td>{{ tag.tag_type }}</td>
+            </tr>
+            <tr>
+                <td>Active</td>
+                <td>{{ tag.active }}</td>
+            </tr>
+            <tr>
+                <td>Description</td>
+                <td>{{ tag.description }}</td>
+            </tr>
+        </table>
+        <h2 class="mt-5">Gamemodes</h2>
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-3">Name</th>
+                    <th scope="col">Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag_set in tag_sets %}
+                <tr>
+                    <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-light">{{ tag_set.name }}</a></th>
+                    <td class="col-md-2">{{ tag_set.type }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 <!--name = models.CharField(max_length=32, unique=True)
     tag_type = models.CharField(max_length=16)
     desc = models.CharField(max_length=300)

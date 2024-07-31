@@ -165,7 +165,7 @@ class Community(models.Model):
     def __str__(self):
         return self.name
 
-    def to_json(self):
+    def to_dict(self):
         return {
             'id': self.pk,
             'name': self.name,
@@ -189,7 +189,7 @@ class CommunityUser(models.Model):
     banned = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_created=True, auto_now=True)
 
-    def to_json(self):
+    def to_dict(self):
         return {
             'id': self.pk,
             'user': self.user.username(),
@@ -206,6 +206,7 @@ class CommunityUser(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(max_length=32, unique=True)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE)
     tag_type = models.CharField(max_length=16)
     description = models.CharField(max_length=300)
     active = models.BooleanField(default=True)
@@ -214,9 +215,10 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
-    def to_json(self):
+    def to_dict_old(self):
         return {
             'id': self.pk,
+            'community_id': self.community.pk,
             'name': self.name,
             'type': self.tag_type,
             'desc': self.description,
@@ -224,8 +226,20 @@ class Tag(models.Model):
             'date_created': self.date_created
         }
 
+    def to_dict(self):
+        return {
+            'id': self.pk,
+            'community_id': self.community.pk,
+            'name': self.name,
+            'type': self.tag_type,
+            'description': self.description,
+            'active': self.active,
+            'date_created': self.date_created
+        }
+
 
 class TagSet(models.Model):
+    # This is referred to as a "Gamemode" on the website!
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
     tags = models.ManyToManyField(Tag, blank=True)
     name = models.CharField(max_length=120, unique=True)
@@ -236,7 +250,7 @@ class TagSet(models.Model):
     def __str__(self):
         return self.name
 
-    def to_json(self):
+    def to_dict(self):
         return {
             'id': self.pk,
             'name': self.name,
@@ -254,7 +268,7 @@ class GeckoCodeTag(models.Model):
     description = models.TextField(blank=True)
     code = models.TextField(blank=True)
 
-    def to_json(self):
+    def to_dict(self):
         return {
             'tag_id': self.tag.pk,
             'code': self.code,

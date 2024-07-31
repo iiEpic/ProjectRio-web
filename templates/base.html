@@ -38,7 +38,7 @@
                 </div>
             </div>
         </nav>
-        <div class="container-fluid d-flex flex-column ps-0 pe-0" style="top: 0; bottom: 0; padding-top: 65px">
+        <div class="container-fluid d-flex flex-column ps-0" style="top: 0; bottom: 0; right: 0; padding-top: 65px">
             <div class="row flex-grow-1">
                 <div class="col-md border-end position-fixed bg-dark text-white flex-shrink-0 p-3 overflow-scroll" style="top: 65px; bottom: 0; width: 280px;">
                     <ul class="list-unstyled ps-0">
@@ -50,7 +50,7 @@
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                                     <li class="sidebar-li"><a href="#" class="sidebar-link">Unofficial</a></li>
                                     <li class="sidebar-li"><a href="#" class="sidebar-link">Official</a></li>
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">All</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode' %}" class="sidebar-link">All</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -87,7 +87,6 @@
                                     <li class="sidebar-li"><a href="#" class="sidebar-link">Create Tags</a></li>
                                     <li class="sidebar-li"><a href="#" class="sidebar-link">Create Tag Sets</a></li>
                                     <li class="sidebar-li"><a href="{% url 'frontend:tags' %}" class="sidebar-link">View Tags</a></li>
-                                    <li class="sidebar-li"><a href="{% url 'frontend:tagsets' %}" class="sidebar-link">View Tag Sets</a></li>
                                 </ul>
                             </div>
                         </li>

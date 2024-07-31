@@ -20,7 +20,7 @@ def create_hidden_env():
         print('Creating .env file...')
         with open('.env', 'w+') as f:
             password = ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
-            f.write(f'DJANGO_SUPERUSER_PASSWORD={password}')
+            f.write(f'\nDJANGO_SUPERUSER_PASSWORD={password}\n')
         os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
     else:
         # Check if we have superuser password in there
@@ -31,7 +31,7 @@ def create_hidden_env():
             password = ''.join(
                 secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
             with open('.env', 'a+') as f:
-                f.write(f'DJANGO_SUPERUSER_PASSWORD={password}')
+                f.write(f'\nDJANGO_SUPERUSER_PASSWORD={password}\n')
         else:
             password = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', data).group(1)
         os.environ['DJANGO_SUPERUSER_PASSWORD'] = password

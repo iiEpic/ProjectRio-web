@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-Project Rio - Tagsets
+Project Rio - Gamemodes
 {% endblock %}
 
 {% block start_body_script %}
@@ -43,27 +43,35 @@ Project Rio - Tagsets
 
 
 {% block body %}
-<h1>All Tagsets</h1>
-<div class="form-floating mb-3" style="width: 95%;">
-  <input type="text" class="form-control" id="searchInput" placeholder="Search for tagsets" onkeyup="searchTable()">
-  <label for="searchInput">Search for tagsets</label>
+<div class="card mt-3">
+    <div class="card-header">
+        <div>
+            <span class="display-5">All Gamemodes</span>
+            <div class="form-floating w-25 float-end">
+              <input type="text" class="form-control" id="searchInput" placeholder="Search for gamemode" onkeyup="searchTable()">
+              <label for="searchInput">Search for gamemode</label>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-3">Name</th>
+                    <th scope="col">Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag_set in tag_sets %}
+                <tr>
+                    <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-light">{{ tag_set.name }}</a></th>
+                    <td class="col-md-2">{{ tag_set.type }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
-<table class="table table-dark table-hover" style="width:95%;">
-    <thead>
-        <tr>
-            <th scope="col" class="ps-3">Name</th>
-            <th scope="col">Type</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for tag_set in tag_sets %}
-        <tr>
-            <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tagsets' tag_set.name %}" class="link-light">{{ tag_set.name }}</a></th>
-            <td class="col-md-2">{{ tag_set.type }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}
 
 {% block end_body_script %}

@@ -6,7 +6,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import render, redirect, reverse
 from django.views import View
 from frontend.forms import LoginForm, RegisterForm
-from itertools import chain
 
 
 class Communities(View):
@@ -176,6 +175,7 @@ class Tags(View):
 
 
 class Tagsets(View):
+    # TagSets are called "Gamemodes" on the front-end
     def get(self, request, *args, **kwargs):
         try:
             if kwargs['name'][-1] == '/':
@@ -186,7 +186,7 @@ class Tagsets(View):
         if kwargs['name'].lower() in ['', 'all']:
             # We are returning the entire tag database
             tag_set_list = models.TagSet.objects.all()
-            return render(request, 'frontend/all_tagsets.html', context={'tag_sets': tag_set_list})
+            return render(request, 'frontend/all_gamemodes.html', context={'tag_sets': tag_set_list})
         else:
             # Check if community being requested actually exists
             tag_set_object = models.TagSet.objects.filter(name__iexact=kwargs['name']).first()
@@ -195,18 +195,18 @@ class Tagsets(View):
                 if request.user.is_authenticated:
                     user_object = models.RioUser.objects.filter(user=request.user).first()
                 else:
-                    return render(request, 'frontend/view_tagset.html',
+                    return render(request, 'frontend/view_gamemode.html',
                                   context={'tag_set': tag_set_object})
                 if tag_set_object.community.private and models.CommunityUser.objects.filter(
                         user=user_object, community=tag_set_object.community).first() is not None:
                     community = tag_set_object.community
                 else:
                     community = None
-                return render(request, 'frontend/view_tagset.html',
+                return render(request, 'frontend/view_gamemode.html',
                               context={'tag_set': tag_set_object, 'community': community})
             else:
                 # Tag does not exist
-                return render(request, 'frontend/view_tagset.html',
+                return render(request, 'frontend/view_gamemode.html',
                               context={'tag_set': None, 'tag_set_name': kwargs['name']})
 
 
