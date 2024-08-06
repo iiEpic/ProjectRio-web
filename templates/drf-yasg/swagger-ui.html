@@ -1,0 +1,24 @@
+{% extends "drf-yasg/swagger-ui.html" %}
+
+{% block extra_scripts %}
+    <script>
+        var jwt_token = JSON.parse(localStorage.getItem(KEY_AUTH))['JWT Token']
+        var rio_api_key = JSON.parse(localStorage.getItem(KEY_AUTH))['API/Rio Key']
+
+        if (jwt_token != undefined) {
+            if (! jwt_token.value.startsWith('Bearer')) {
+                var old_authorization = JSON.parse(localStorage.getItem(KEY_AUTH))
+                old_authorization['JWT Token'].value = "Bearer " + old_authorization['JWT Token'].value
+                localStorage.setItem(KEY_AUTH, JSON.stringify(Immutable.fromJS(old_authorization)))
+            }
+        }
+
+        if (rio_api_key != undefined) {
+            if (! rio_api_key.value.startsWith('Token')) {
+                var old_authorization = JSON.parse(localStorage.getItem(KEY_AUTH))
+                old_authorization['API/Rio Key'].value = "Token " + old_authorization['API/Rio Key'].value
+                localStorage.setItem(KEY_AUTH, JSON.stringify(Immutable.fromJS(old_authorization)))
+            }
+        }
+    </script>
+{% endblock %}

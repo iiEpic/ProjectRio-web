@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_yasg',
     'api',
     'frontend'
 ]
@@ -140,6 +141,21 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = 'static/'
+
+SWAGGER_SETTINGS = {
+    'LOGIN_URL': 'frontend:login',
+    'USE_SESSION_AUTH': False,
+    'SECURITY_DEFINITIONS': {
+        'JWT Token': {'type': 'apiKey', 'name': 'Authorization', 'in': 'header'},
+        'API/Rio Key': {'type': 'apiKey', 'name': 'Authorization', 'in': 'header'},
+    },
+    'JSON_EDITOR': True,
+    'SHOW_REQUEST_HEADERS': True,
+    'OPERATIONS_SORTER': 'alpha',
+    'PERSIST_AUTH': True
+}
+
+LOGIN_URL = 'frontend:login'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

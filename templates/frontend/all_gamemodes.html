@@ -46,7 +46,7 @@ Project Rio - Gamemodes
 <div class="card mt-3">
     <div class="card-header">
         <div>
-            <span class="display-5">All Gamemodes</span>
+            <span class="display-5">All {% if type %}{{ type|title }}{% endif %} Gamemodes</span>
             <div class="form-floating w-25 float-end">
               <input type="text" class="form-control" id="searchInput" placeholder="Search for gamemode" onkeyup="searchTable()">
               <label for="searchInput">Search for gamemode</label>
