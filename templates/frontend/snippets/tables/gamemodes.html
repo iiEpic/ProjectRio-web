@@ -1,0 +1,61 @@
+<table class="table table-hover" id="gamemodes_table{% if type %}_{{ type }}{% endif %}">
+    <thead>
+        <tr>
+            <th scope="col" class="ps-3 col col-3">Name</th>
+            <th scope="col" class="col col-3">Type</th>
+            <th scope="col" class="col col-3">Start Date</th>
+            <th scope="col" class="col col-3">End Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tag_set in tag_sets %}
+        {% if active == 'True' %}
+            {% if tag_set.is_active %}
+            <tr>
+                <th scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></th>
+                <td>{{ tag_set.type }}</td>
+                <td>{{ tag_set.start_date }}</td>
+                <td>
+                {{ tag_set.end_date }}
+                <div class="float-end">
+                    {% if not tag_set.is_active %}<span class="badge rounded-pill text-bg-danger">Inactive</span>{% endif %}
+                    {% if tag_set.in_progress %}<span class="badge rounded-pill text-bg-success">In-progress</span>{% endif %}
+                    {% if tag_set.is_future %}<span class="badge rounded-pill text-bg-primary">Future</span>{% endif %}
+                </div>
+            </td>
+            </tr>
+            {% endif %}
+        {% elif active == 'False' %}
+            {% if not tag_set.is_active %}
+            <tr>
+                <th scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></th>
+                <td>{{ tag_set.type }}</td>
+                <td>{{ tag_set.start_date }}</td>
+                <td>
+                {{ tag_set.end_date }}
+                <div class="float-end">
+                    {% if not tag_set.is_active %}<span class="badge rounded-pill text-bg-danger">Inactive</span>{% endif %}
+                    {% if tag_set.in_progress %}<span class="badge rounded-pill text-bg-success">In-progress</span>{% endif %}
+                    {% if tag_set.is_future %}<span class="badge rounded-pill text-bg-primary">Future</span>{% endif %}
+                </div>
+            </td>
+            </tr>
+            {% endif %}
+        {% else %}
+            <tr>
+                <th scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></th>
+                <td>{{ tag_set.type }}</td>
+                <td>{{ tag_set.start_date }}</td>
+                <td>
+                {{ tag_set.end_date }}
+                <div class="float-end">
+                    {% if not tag_set.is_active %}<span class="badge rounded-pill text-bg-danger">Inactive</span>{% endif %}
+                    {% if tag_set.in_progress %}<span class="badge rounded-pill text-bg-success">In-progress</span>{% endif %}
+                    {% if tag_set.is_future %}<span class="badge rounded-pill text-bg-primary">Future</span>{% endif %}
+                </div>
+            </td>
+            </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>

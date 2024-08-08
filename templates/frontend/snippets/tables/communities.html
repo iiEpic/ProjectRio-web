@@ -1,0 +1,29 @@
+<table class="table table-hover" id="communities_table">
+    <thead>
+        <tr>
+            <th scope="col" class="ps-3">Name</th>
+            <th scope="col">Date Created</th>
+            <th scope="col">Description</th>
+            <th scope="col">Private</th>
+            <th scope="col">Tag Set Limit</th>
+            <th scope="col">Type</th>
+            <th scope="col">URL</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for community in communities %}
+        <tr>
+            <th scope="row" class="ps-3 col-md-2">
+                <a href="{% url 'frontend:communities' community.name %}" class="link-dark">{{ community.name }}</a>
+                {% if community.sponsor is None %}<span class="badge rounded-pill text-bg-warning">Unsponsored</span>{% endif %}
+            </th>
+            <td class="col-md-2">{{ community.date_created }}</td>
+            <td class="col-md-2">{{ community.description }}</td>
+            <td class="col-md-1">{{ community.private }}</td>
+            <td class="col-md-2">{{ community.active_tag_set_limit }}</td>
+            <td class="col-md-1">{{ community.community_type }}</td>
+            <td class="col-md-4">{{ community.active_url }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

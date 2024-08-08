@@ -21,7 +21,8 @@ class Communities(View):
             # Get all communities that are not marked "Private" if the requester is NOT staff
             if request.user.is_anonymous:
                 public_list = models.Community.objects.filter(private=False)
-                return render(request, 'frontend/all_communities.html', context={'communities': public_list})
+                return render(request, 'frontend/all_items.html', context={'item_type': 'communities',
+                                                                           'communities': public_list})
             if not request.user.is_staff:
                 # User is not staff but try to find private communities the user is apart of
                 user_object = models.RioUser.objects.filter(user=request.user).first()
@@ -30,7 +31,8 @@ class Communities(View):
                 community_list = private_list | public_list
             else:
                 community_list = models.Community.objects.all()
-            return render(request, 'frontend/all_communities.html', context={'communities': community_list})
+            return render(request, 'frontend/all_items.html', context={'item_type': 'communities',
+                                                                       'communities': community_list})
         else:
             # Check if community being requested actually exists
             community_object = models.Community.objects.filter(name__iexact=kwargs['name']).first()
@@ -51,8 +53,9 @@ class Communities(View):
                         return render(request, 'frontend/view_community.html', context={'community': None,
                                                                               'community_name': kwargs['name']})
                 tag_sets = models.TagSet.objects.filter(community=community_object)
+                tags = models.Tag.objects.filter(community=community_object)
                 return render(request, 'frontend/view_community.html',
-                              context={'community': community_object, 'tag_sets': tag_sets})
+                              context={'community': community_object, 'tag_sets': tag_sets, 'tags': tags})
             else:
                 # Community does not exist
                 return render(request, 'frontend/view_community.html', context={'community': None,
@@ -159,7 +162,8 @@ class Tags(View):
         if kwargs['name'].lower() in ['', 'all']:
             # We are returning the entire tag database
             tag_list = models.Tag.objects.all()
-            return render(request, 'frontend/all_tags.html', context={'tags': tag_list})
+            return render(request, 'frontend/all_items.html', context={'item_type': 'tags',
+                                                                       'tags': tag_list})
         else:
             # Check if community being requested actually exists
             tag_object = models.Tag.objects.filter(name__iexact=kwargs['name']).first()
@@ -182,8 +186,9 @@ class Tagsets(View):
             # Key should only be type at this point
             if list(request.GET.keys())[0] == 'type':
                 tag_set_list = models.TagSet.objects.filter(community__community_type__iexact=request.GET.get('type'))
-                return render(request, 'frontend/all_gamemodes.html',
-                              context={'tag_sets': tag_set_list,
+                return render(request, 'frontend/all_items.html',
+                              context={'item_type': 'gamemodes',
+                                       'tag_sets': tag_set_list,
                                        'type': request.GET.get('type')
                                        }
                               )
@@ -196,7 +201,8 @@ class Tagsets(View):
         if kwargs['name'].lower() in ['', 'all']:
             # We are returning the entire tag database
             tag_set_list = models.TagSet.objects.all()
-            return render(request, 'frontend/all_gamemodes.html', context={'tag_sets': tag_set_list})
+            return render(request, 'frontend/all_items.html', context={'item_type': 'gamemodes',
+                                                                       'tag_sets': tag_set_list})
         else:
             # Check if community being requested actually exists
             tag_set_object = models.TagSet.objects.filter(name__iexact=kwargs['name']).first()

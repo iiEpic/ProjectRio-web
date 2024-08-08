@@ -24,12 +24,10 @@ Project Rio - {{ community.name }}
 {% endif %}
 <div class="card mt-3">
     <div class="card-header">
-        <div>
-            <span class="display-5">{{ community.name }} Community</span>
-        </div>
+        <span class="display-5">{{ community.name }} Community</span>
     </div>
     <div class="card-body">
-        <table class="table table-dark table-hover">
+        <table class="table table-hover">
             <tr>
                 <th>Variable Name</th>
                 <th>Variable Value</th>
@@ -42,7 +40,7 @@ Project Rio - {{ community.name }}
                 <td>Community Type</td>
                 <td>{{ community.community_type }}</td>
             </tr>
-            <tr>
+            <tr {% if community.private %}class="fw-bold"{% endif %}>
                 <td>Private</td>
                 <td>{{ community.private }}</td>
             </tr>
@@ -59,26 +57,11 @@ Project Rio - {{ community.name }}
                 <td>{{ community.description }}</td>
             </tr>
         </table>
-        <h2>Active Gamemodes</h2>
-        <table class="table table-dark table-hover">
-            <thead>
-                <tr>
-                    <th scope="col" class="ps-3">Name</th>
-                    <th scope="col">Type</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tag_set in tag_sets %}
-                <tr>
-                    <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-light">{{ tag_set.name }}</a></th>
-                    <td class="col-md-2">{{ tag_set.type }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 </div>
-
-
+{% include 'frontend/snippets/cards/gamemodes.html' with type='Active' fs=2 tag_sets=tag_sets active='True' %}
+{% include 'frontend/snippets/cards/gamemodes.html' with type='Previous' fs=2 tag_sets=tag_sets active='False' %}
+{% include 'frontend/snippets/cards/tags.html' with type='Active' fs=2 tags=tags active='True' %}
+{% include 'frontend/snippets/cards/tags.html' with type='Inactive' fs=2 tags=tags active='False' %}
 {% endif %}
 {% endblock %}

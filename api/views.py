@@ -22,7 +22,8 @@ class GenericView(APIView):
             'tag': 'Tag',
             'tagset': 'TagSet',
             'community': 'Community',
-            'communityuser': 'CommunityUser'
+            'communityuser': 'CommunityUser',
+            'characters': 'Character',
         }
         return JsonResponse(generic_get_request_json(model_name=mapping.get(request.path.split('/')[3]),
                                                      request=request, **kwargs))

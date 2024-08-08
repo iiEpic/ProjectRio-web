@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Project Rio - {{ item_type|title }}
+{% endblock %}
+
+{% block body %}
+{% if item_type == 'communities' %}
+    {% include 'frontend/snippets/cards/communities.html' with communities=communities %}
+{% elif item_type == 'gamemodes' %}
+    {% include 'frontend/snippets/cards/gamemodes.html' with tag_sets=tag_sets %}
+{% elif item_type == 'tags' %}
+    {% include 'frontend/snippets/cards/tags.html' with tags=tags %}
+{% else %}
+    <p>Page not found</p>
+{% endif %}
+{% endblock %}

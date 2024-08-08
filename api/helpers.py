@@ -29,6 +29,9 @@ def generic_get_request_json(model_name, **kwargs):
     if model_name == 'Community':
         return get_community(**kwargs)
 
+    if model_name == 'Character':
+        return get_character(**kwargs)
+
     try:
         if kwargs['name'][-1] == '/':
             kwargs['name'] = kwargs['name'][:-1]
@@ -36,23 +39,23 @@ def generic_get_request_json(model_name, **kwargs):
         # Chances are the kwargs is empty, continue as normal
         pass
     if kwargs['name'].lower() in ['', 'all']:
-        return {'endpoint': kwargs['request'].path,
+        return {'endpoint': kwargs['request'].get_full_path(),
                 'results': get_all_objects_dict(model_name)
                 }
     else:
         model_object = getattr(models, model_name).objects.filter(name__iexact=kwargs['name']).first()
         if model_object is not None:
-            return {'endpoint': kwargs['request'].path,
+            return {'endpoint': kwargs['request'].get_full_path(),
                     'results': model_object.to_dict()
                     }
         else:
             if kwargs['name'].isnumeric():
                 model_object = getattr(models, model_name).objects.filter(pk=kwargs['name']).first()
                 if model_object is not None:
-                    return {'endpoint': kwargs['request'].path,
+                    return {'endpoint': kwargs['request'].get_full_path(),
                             'results': model_object.to_dict()
                             }
-            return {'endpoint': kwargs['request'].path,
+            return {'endpoint': kwargs['request'].get_full_path(),
                     'results': 'error',
                     'error_code': f'{model_name.upper()}_NULL',
                     'error': f"{model_name} requested does not exist, {kwargs['name']}"
@@ -74,14 +77,14 @@ def generic_post_request_json(model_name, **kwargs):
                     fields['required'].append(field.name)
                 else:
                     fields['optional'].append(field.name)
-            return {'endpoint': kwargs['request'].path,
+            return {'endpoint': kwargs['request'].get_full_path(),
                     'results': 'error',
                     'error_code': f'{model_name.upper()}_INVALID_FORM',
                     'error': f"Data provided is not valid for creation of, {model_name}",
                     'form_errors': form.errors,
                     } | fields
     else:
-        return {'endpoint': kwargs['request'].path,
+        return {'endpoint': kwargs['request'].get_full_path(),
                 'results': 'error',
                 'error_code': f'{model_name.upper()}_FORM_NOT_FOUND',
                 'error': f"Internal error. Please contact administrator with this entire output.",
@@ -306,6 +309,16 @@ def create_community(form, request):
     }
 
     return content
+
+
+def get_character(**kwargs):
+    if len(kwargs['request'].GET.keys()) != 0:
+        if list(kwargs['request'].GET.keys())[0] == 'name':
+            character_name = kwargs['request'].GET.get('name').title()
+            character_model = models.Character.objects.filter(name=character_name).first()
+            return {'endpoint': kwargs['request'].get_full_path(),
+                    'results': character_model.to_dict()
+                    }
 
 
 def get_community(request, **kwargs):

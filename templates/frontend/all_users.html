@@ -44,7 +44,7 @@ Project Rio - Users
         </div>
     </div>
     <div class="card-body">
-        <table class="table table-dark table-hover">
+        <table class="table table-hover">
             <thead>
                 <tr>
                     <th scope="col" class="ps-3">#</th>
@@ -57,7 +57,7 @@ Project Rio - Users
                 {% for user in users %}
                 <tr>
                     <th scope="row" class="ps-3 col-md-2">{{ forloop.counter }}</th>
-                    <td class="col-md-2"><a href="{% url 'frontend:users' user.username %}" class="link-light">{{ user.user.username }}</a></td>
+                    <td class="col-md-2"><a href="{% url 'frontend:users' user.username %}" class="link-dark">{{ user.user.username }}</a></td>
                     <td class="col-md-2">{{ user.date_created }}</td>
                     <td class="col-md-4">
                         {% if user.private %}

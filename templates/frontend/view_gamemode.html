@@ -16,42 +16,49 @@ Project Rio - {{ tag_set.name }}
 <h1>Gamemode does not exist, {{ tag_set_name }}</h1>
 
 {% else %}
+{% with tag_set.get_status as status %}
+<div class="alert alert-{{ status.alert }} mt-3" role="alert">
+    {{ status.message }}
+</div>
+{% endwith %}
+
 <div class="card mt-3">
     <div class="card-header">
-        <div>
-            <span class="display-5">{{ tag_set.name }} Gamemode</span>
+        <div class="display-5">
+            {{ tag_set.name }} Gamemode
         </div>
     </div>
     <div class="card-body">
-        <h2>Tags</h2>
-        <table class="table table-dark table-hover">
+        <table class="table table-hover mt-3">
             <thead>
                 <tr>
-                    <th scope="col" class="ps-3">Name</th>
-                    <th scope="col">Active</th>
-                    <th scope="col">Date Created</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Gecko Code</th>
-                    <th scope="col">Gecko Code Desc</th>
-                    <th scope="col">Type</th>
+                    <th>Variable Name</th>
+                    <th>Variable Value</th>
                 </tr>
             </thead>
             <tbody>
-                {% for tag in tag_set.tags.all %}
                 <tr>
-                    <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-light">{{ tag.name }}</a></th>
-                    <td class="col-md-1">{{ tag.active }}</td>
-                    <td class="col-md-2">{{ tag.date_created }}</td>
-                    <td class="col-md-2">{{ tag.desc }}</td>
-                    <td class="col-md-1">12345678</td>
-                    <td class="col-md-2">Fake Gecko Code Description</td>
-                    <td class="col-md-1">{{ tag.tag_type }}</td>
+                    <td>Community</td>
+                    <td><a href="{% url 'frontend:communities' tag_set.community.name %}" class="link-dark">{{ tag_set.community.name }}</a></td>
                 </tr>
-                {% endfor %}
+                <tr>
+                    <td>Type</td>
+                    <td>{{ tag_set.type }}</td>
+                </tr>
+                <tr>
+                    <td>Start Date</td>
+                    <td>{{ tag_set.start_date }}</td>
+                </tr>
+                <tr>
+                    <td>End Date</td>
+                    <td>{{ tag_set.end_date }}</td>
+                </tr>
             </tbody>
         </table>
     </div>
 </div>
+{% include 'frontend/snippets/cards/tags.html' with fs=2 tags=tag_set.tags.all active='all' %}
+
 {% if community %}
     <h2>Community</h2>
     <table class="table table-dark table-hover">
@@ -68,7 +75,7 @@ Project Rio - {{ tag_set.name }}
         </thead>
         <tbody>
             <tr>
-                <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:communities' community.name %}" class="link-light">{{ community.name }}</a></th>
+                <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:communities' community.name %}" class="link-dark">{{ community.name }}</a></th>
                 <td class="col-md-2">{{ community.date_created }}</td>
                 <td class="col-md-2">{{ community.desc }}</td>
                 <td class="col-md-2">{{ community.private }}</td>

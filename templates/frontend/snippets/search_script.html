@@ -1,0 +1,33 @@
+<script>
+    function searchTable_{{ name }}{% if type %}_{{ type }}{% endif %}() {
+      // Declare variables
+      var input, filter, table, tr, td, i, txtValue;
+      input = document.getElementById("searchInput_{{ name }}{% if type %}_{{ type }}{% endif %}");
+      filter = input.value.toUpperCase();
+      table = document.getElementById('{{ name }}_table{% if type %}_{{ type }}{% endif %}');
+      tr = table.getElementsByTagName("tr");
+
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 1; i < tr.length; i++) {
+        th = tr[i].getElementsByTagName("th")[0];
+        if (th) {
+          txtValue = th.textContent || th.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+          } else {
+            tr[i].style.display = "none";
+          }
+        }else{
+            td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+              txtValue = td.textContent || td.innerText;
+              if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+              } else {
+                tr[i].style.display = "none";
+              }
+            }
+        }
+      }
+    }
+</script>

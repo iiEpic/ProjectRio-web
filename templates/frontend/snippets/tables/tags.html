@@ -1,0 +1,52 @@
+<table class="table table-hover" id="tags_table{% if type %}_{{ type }}{% endif %}">
+    <thead>
+        <tr>
+            <th scope="col" class="ps-3">Name</th>
+            <th scope="col">Active</th>
+            <th scope="col">Date Created</th>
+            <th scope="col">Description</th>
+            <th scope="col">Gecko Code</th>
+            <th scope="col">Gecko Code Desc</th>
+            <th scope="col">Type</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tag in tags %}
+        {% if active == 'True'%}
+            {% if tag.active %}
+            <tr>
+                <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-dark">{{ tag.name }}</a></th>
+                <td class="col-md-1">{{ tag.active }}</td>
+                <td class="col-md-2">{{ tag.date_created }}</td>
+                <td class="col-md-2">{{ tag.description }}</td>
+                <td class="col-md-1">12345678</td>
+                <td class="col-md-2">Fake Gecko Code Description</td>
+                <td class="col-md-1">{{ tag.tag_type }}</td>
+            </tr>
+            {% endif %}
+        {% elif active == 'False' %}
+            {% if not tag.active %}
+            <tr>
+                <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-dark">{{ tag.name }}</a></th>
+                <td class="col-md-1">{{ tag.active }}</td>
+                <td class="col-md-2">{{ tag.date_created }}</td>
+                <td class="col-md-2">{{ tag.description }}</td>
+                <td class="col-md-1">12345678</td>
+                <td class="col-md-2">Fake Gecko Code Description</td>
+                <td class="col-md-1">{{ tag.tag_type }}</td>
+            </tr>
+            {% endif %}
+        {% else %}
+            <tr>
+                <th scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-dark">{{ tag.name }}</a></th>
+                <td class="col-md-1">{{ tag.active }}</td>
+                <td class="col-md-2">{{ tag.date_created }}</td>
+                <td class="col-md-2">{{ tag.description }}</td>
+                <td class="col-md-1">12345678</td>
+                <td class="col-md-2">Fake Gecko Code Description</td>
+                <td class="col-md-1">{{ tag.tag_type }}</td>
+            </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>

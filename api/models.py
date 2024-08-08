@@ -1,7 +1,9 @@
+from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 import rest_framework.authtoken.models
@@ -123,6 +125,38 @@ class Character(models.Model):
     def __str__(self):
         return self.name
 
+    def to_dict(self):
+        return {
+            'char_id': self.pk,
+            'chemistry_table_id': self.chemistry_table.pk,
+            'name': self.name,
+            'starting_addr': self.starting_addr,
+            'curve_ball_speed': self.curve_ball_speed,
+            'fast_ball_speed': self.fast_ball_speed,
+            'curve': self.curve,
+            'fielding_arm': self.fielding_arm,
+            'batting_stance': self.batting_stance,
+            'nice_contact_spot_size': self.nice_contact_spot_size,
+            'perfect_contact_spot_size': self.perfect_contact_spot_size,
+            'slap_hit_power': self.slap_hit_power,
+            'charge_hit_power': self.charge_hit_power,
+            'bunting': self.bunting,
+            'hit_trajectory_mpp': self.hit_trajectory_mpp,
+            'hit_trajectory_mhl': self.hit_trajectory_mhl,
+            'speed': self.speed,
+            'throwing_arm': self.throwing_arm,
+            'character_class': self.character_class,
+            'weight': self.weight,
+            'captain': 'True' if self.captain == 1 else 'False',
+            'captain_star_hit_or_pitch': self.captain_star_hit_or_pitch,
+            'non_captain_star_swing': self.non_captain_star_swing,
+            'non_captain_star_pitch': self.non_captain_star_pitch,
+            'batting_stat_bar': self.batting_stat_bar,
+            'pitching_stat_bar': self.pitching_stat_bar,
+            'running_stat_bar': self.running_stat_bar,
+            'fielding_stat_bar': self.fielding_stat_bar,
+        }
+
 
 class UserGroup(models.Model):
     daily_limit = models.IntegerField(default=0)
@@ -154,7 +188,7 @@ class RioUser(models.Model):
 
 class Community(models.Model):
     name = models.CharField(max_length=32, unique=True)
-    sponsor = models.ForeignKey(RioUser, null=True, on_delete=models.CASCADE)
+    sponsor = models.ForeignKey(RioUser, blank=True, null=True, on_delete=models.CASCADE)
     community_type = models.CharField(max_length=16, help_text='Official, Unofficial')
     private = models.BooleanField(default=True)
     active_tag_set_limit = models.IntegerField(default=5)
@@ -166,6 +200,9 @@ class Community(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_number_active_tagsets(self):
+        return len([i for i in self.tagset_set.all() if i.is_active()])
 
     def is_valid_type(self, content):
         if content.lower() in self.valid_types:
@@ -265,6 +302,44 @@ class TagSet(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_status(self):
+        if self.is_future():
+            return {
+                'status': 'future',
+                'message': 'Gamemode scheduled for future dates',
+                'alert': 'primary'
+            }
+        if self.in_progress():
+            return {
+                'status': 'in-progress',
+                'message': 'Gamemode is currently in-progress',
+                'alert': 'success'
+            }
+        if not self.is_active():
+            return {
+                'status': 'inactive',
+                'message': 'Gamemode is no longer active',
+                'alert': 'danger'
+            }
+
+    def is_active(self):
+        if self.start_date > timezone.now():
+            return True
+        # Check if gamemode start date is in the past AND end date is in the future
+        if self.start_date < timezone.now() < self.end_date:
+            return True
+        return False
+
+    def in_progress(self):
+        if self.start_date < timezone.now() < self.end_date:
+            return True
+        return False
+
+    def is_future(self):
+        if self.start_date > timezone.now():
+            return True
+        return False
 
     def is_valid_type(self, content):
         if content.lower() in self.valid_types:
