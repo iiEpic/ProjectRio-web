@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Project Rio - Create Community
+Project Rio - Create Community
+{% endblock %}
+
+<!--
+    name = forms.CharField(label='Name', max_length=32)
+    community_type = forms.CharField(label='Community Type', max_length=16)
+    private = forms.IntegerField(label='Private')
+    global_link = forms.IntegerField(label='Global Link', required=False)
+    description = forms.CharField(label='Description', max_length=300)-->
+
+{% block body %}
+{% if error %}
+<div class="alert alert-danger mt-3" role="alert">
+    {{ error_code }}<br/>
+    {{ error }}<br/>
+    {% if form_errors %}{{ form_errors }}<br/>{% endif %}
+    {% if communities_sponsored %}{{ communities_sponsored }}<br/>{% endif %}
+</div>
+{% endif %}
+
+<form method="POST" class="needs-validation" novalidate>
+    {% csrf_token %}
+    <div class="card mt-3 w-50 mx-auto">
+        <div class="card-header">
+            <div class="fs-3">
+                Create Community
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="input-group mb-3">
+                <span class="input-group-text">Community Name</span>
+                <input type="text" class="form-control" id="name" name="name" aria-label="Community Name" aria-describedby="basic-addon1">
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect01">Public/Private</label>
+                <select class="form-select" id="inputGroupSelect01" name="private">
+                    <option value="0" selected>Public</option>
+                    <option value="1">Private</option>
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect02">Community Type</label>
+                <select class="form-select" id="inputGroupSelect02" name="community_type">
+                    <option value="unofficial" selected>Unofficial</option>
+                    <option value="official">Official</option>
+                </select>
+            </div>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="global_link" name="global_link">
+                <label class="form-check-label" for="global_link">Generate Invite Link</label>
+            </div>
+            <div class="input-group">
+                <span class="input-group-text">Description</span>
+                <textarea class="form-control" aria-label="Description" id="description" name="description"></textarea>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-success float-end">Create Community</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

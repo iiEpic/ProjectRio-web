@@ -22,6 +22,6 @@ class CommunityForm(forms.Form):
     community_type = forms.CharField(label='Community Type', max_length=16)
     private = forms.IntegerField(label='Private')
     global_link = forms.IntegerField(label='Global Link', required=False)
-    description = forms.CharField(label='Description', max_length=300)
+    description = forms.CharField(label='Description', max_length=300, required=False)
 
 

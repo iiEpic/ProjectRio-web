@@ -1,3 +1,5 @@
+import json
+import requests
 from api import models
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -8,7 +10,35 @@ from django.views import View
 from frontend.forms import LoginForm, RegisterForm
 
 
-class Communities(View):
+class CreateCommunity(View):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(reverse('frontend:login'))
+        return render(request, 'frontend/create_community.html', context={})
+
+    def post(self, request, *args, **kwargs):
+
+        data = {**request.POST}
+        if 'global_link' in data.keys():
+            data['global_link'] = 1 if data['global_link'] == 'on' else 0
+
+        rio_user = models.RioUser.objects.get(user=request.user)
+        url = request.build_absolute_uri(reverse('api:community'))
+        headers = {
+            'Authorization': f"Token {rio_user.api_key}"
+        }
+        response = requests.post(url, headers=headers, data=data)
+
+        results = json.loads(response.text)
+        if results['results'] == 'error':
+            return render(request, 'frontend/create_community.html', context=results)
+        else:
+            print(json.dumps(results,indent=4))
+            return redirect(reverse('frontend:communities',
+                                    kwargs={'name': results['results']['community']['name']}))
+
+
+class ViewCommunities(View):
     def get(self, request, *args, **kwargs):
         try:
             if kwargs['name'][-1] == '/':

@@ -3,6 +3,7 @@ from django.urls import path, re_path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
+app_name = 'api'
 urlpatterns = [
     # ----- Start v1 Endpoints ----- #
     path('tag/list', views.v1_tag_list.as_view(), name='v1_tag'),
