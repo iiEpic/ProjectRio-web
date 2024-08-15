@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from django.shortcuts import render, redirect, reverse
+from django.shortcuts import render, redirect, reverse, HttpResponse
 from django.views import View
 from frontend.forms import LoginForm, RegisterForm
 
@@ -17,10 +17,9 @@ class CreateCommunity(View):
         return render(request, 'frontend/create_community.html', context={})
 
     def post(self, request, *args, **kwargs):
-
         data = {**request.POST}
         if 'global_link' in data.keys():
-            data['global_link'] = 1 if data['global_link'] == 'on' else 0
+            data['global_link'] = 1 if data['global_link'][0] == 'on' else 0
 
         rio_user = models.RioUser.objects.get(user=request.user)
         url = request.build_absolute_uri(reverse('api:community'))
@@ -33,7 +32,6 @@ class CreateCommunity(View):
         if results['results'] == 'error':
             return render(request, 'frontend/create_community.html', context=results)
         else:
-            print(json.dumps(results,indent=4))
             return redirect(reverse('frontend:communities',
                                     kwargs={'name': results['results']['community']['name']}))
 

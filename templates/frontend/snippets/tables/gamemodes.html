@@ -1,18 +1,38 @@
 <table class="table table-hover" id="gamemodes_table{% if type %}_{{ type }}{% endif %}">
     <thead>
         <tr>
-            <th scope="col" class="ps-3 col col-3">Name</th>
-            <th scope="col" class="col col-3">Type</th>
-            <th scope="col" class="col col-3">Start Date</th>
-            <th scope="col" class="col col-3">End Date</th>
+            <th scope="col" class="ps-3 col col-3">Name
+                <i class="bi bi-funnel filter-icon"></i>
+                <div class="filter-box">
+                    <input type="text" class="form-control filter-input" placeholder="Filter by name">
+                </div>
+            </th>
+            <th scope="col" class="col col-3">Type
+                <i class="bi bi-funnel filter-icon"></i>
+                <div class="filter-box">
+                    <input type="text" class="form-control filter-input" placeholder="Filter by type">
+                </div>
+            </th>
+            <th scope="col" class="col col-3">Start Date
+                <i class="bi bi-funnel filter-icon"></i>
+                <div class="filter-box">
+                    <input type="text" class="form-control filter-input" placeholder="Filter by date">
+                </div>
+            </th>
+            <th scope="col" class="col col-3">End Date
+                <i class="bi bi-funnel filter-icon"></i>
+                <div class="filter-box">
+                    <input type="text" class="form-control filter-input" placeholder="Filter by date">
+                </div>
+            </th>
         </tr>
     </thead>
-    <tbody>
+    <tbody id="table-body-gamemodes{% if type %}-{{ type|lower }}{% endif %}"
         {% for tag_set in tag_sets %}
         {% if active == 'True' %}
             {% if tag_set.is_active %}
             <tr>
-                <th scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></th>
+                <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
                 <td>{{ tag_set.type }}</td>
                 <td>{{ tag_set.start_date }}</td>
                 <td>
@@ -28,7 +48,7 @@
         {% elif active == 'False' %}
             {% if not tag_set.is_active %}
             <tr>
-                <th scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></th>
+                <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
                 <td>{{ tag_set.type }}</td>
                 <td>{{ tag_set.start_date }}</td>
                 <td>
@@ -43,7 +63,7 @@
             {% endif %}
         {% else %}
             <tr>
-                <th scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></th>
+                <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
                 <td>{{ tag_set.type }}</td>
                 <td>{{ tag_set.start_date }}</td>
                 <td>
@@ -59,3 +79,65 @@
         {% endfor %}
     </tbody>
 </table>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let activeFilterBox = null;
+
+        // Function to initialize filtering for a specific table
+        function initializeTableFiltering(tableBodyId) {
+            const tableBody = document.getElementById(tableBodyId);
+            const filterIcons = tableBody.closest('table').querySelectorAll('.filter-icon');
+
+            filterIcons.forEach((icon, index) => {
+                icon.addEventListener('click', function (event) {
+                    const filterBox = icon.nextElementSibling;
+
+                    if (activeFilterBox && activeFilterBox !== filterBox) {
+                        activeFilterBox.style.display = 'none';
+                    }
+
+                    filterBox.style.display = filterBox.style.display === 'block' ? 'none' : 'block';
+                    activeFilterBox = filterBox.style.display === 'block' ? filterBox : null;
+
+                    event.stopPropagation(); // Prevents the document click listener from immediately hiding the box
+                });
+            });
+
+            // Prevent the filter box from hiding when clicking inside it
+            const filterBoxes = tableBody.closest('table').querySelectorAll('.filter-box');
+            filterBoxes.forEach((box) => {
+                box.addEventListener('click', function (event) {
+                    event.stopPropagation(); // Prevent click inside filter box from hiding it
+                });
+            });
+
+            // Filter function
+            const filterInputs = tableBody.closest('table').querySelectorAll('.filter-input');
+            filterInputs.forEach((input, index) => {
+                input.addEventListener('input', function () {
+                    const filterValue = input.value.toLowerCase();
+                    const rows = tableBody.getElementsByTagName('tr');
+
+                    Array.from(rows).forEach(row => {
+                        const cell = row.getElementsByTagName('td')[index];
+                        if (cell) {
+                            const cellText = cell.textContent.toLowerCase();
+                            row.style.display = cellText.includes(filterValue) ? '' : 'none';
+                        }
+                    });
+                });
+            });
+        }
+
+        // Hide active filter box when clicking outside
+        document.addEventListener('click', function () {
+            if (activeFilterBox) {
+                activeFilterBox.style.display = 'none';
+                activeFilterBox = null;
+            }
+        });
+
+        // Initialize filtering for all tables
+        initializeTableFiltering('table-body-gamemodes{% if type %}-{{ type|lower }}{% endif %}');
+    });
+</script>

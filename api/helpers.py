@@ -279,7 +279,7 @@ def create_community(form, request):
         sponsor=rio_user_object,
         community_type=form.cleaned_data['community_type'].title(),
         private=bool(form.cleaned_data['private']),
-        active_url=(secrets.token_urlsafe(32) if form.cleaned_data['global_link'] or not bool(form.cleaned_data['private']) else None),
+        active_url=(secrets.token_urlsafe(32) if bool(form.cleaned_data['global_link']) or not bool(form.cleaned_data['private']) else None),
         description=form.cleaned_data['description']
     )
 
