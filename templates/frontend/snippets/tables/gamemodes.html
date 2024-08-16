@@ -27,7 +27,7 @@
             </th>
         </tr>
     </thead>
-    <tbody id="table-body-gamemodes{% if type %}-{{ type|lower }}{% endif %}"
+    <tbody id="table-body-gamemodes{% if type %}-{{ type|lower }}{% endif %}">
         {% for tag_set in tag_sets %}
         {% if active == 'True' %}
             {% if tag_set.is_active %}
