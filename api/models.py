@@ -373,7 +373,8 @@ class GeckoCodeTag(models.Model):
 
 
 class OngoingGame(models.Model):
-    date_time_start = models.DateTimeField()
+    game_id = models.IntegerField()
+    date_time_start = models.IntegerField()
     stadium_id = models.IntegerField(default=0)
     away_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='ongoing_away_player')
     home_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='ongoing_home_player')
@@ -413,10 +414,11 @@ class OngoingGame(models.Model):
 
 
 class Game(models.Model):
+    game_id = models.IntegerField()
     away_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='game_away_player')
     home_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='game_home_player')
-    date_time_start = models.DateTimeField()
-    date_time_end = models.DateTimeField()
+    date_time_start = models.IntegerField()
+    date_time_end = models.IntegerField()
     ranked = models.BooleanField(default=False)
     netplay = models.BooleanField(default=True)
     stadium_id = models.IntegerField(default=0)

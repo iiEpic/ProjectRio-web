@@ -6,94 +6,67 @@ import subprocess
 import sys
 
 
-def create_django_superuser():
-    print('Running Django Create Super User...')
-    subprocess.run(['venv/bin/python', 'manage.py', 'createsuperuser', '--username', 'admin', '--email', 'admin@admin.com', '--noinput'])
-    with open('.env', 'r') as f:
-        password = f.read()
-    password = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', password).group(1)
-    print(f'Created super user:\nUsername: admin\nPassword: {password}\n--------------------')
+class Startup:
+    def __init__(self):
+        if not os.path.exists('venv'):
+            # Creating venv
+            print('Creating virtual environment...')
+            subprocess.run([sys.executable, '-m', 'venv', 'venv/'])
 
-
-def create_hidden_env():
-    if not os.path.exists('.env'):
-        print('Creating .env file...')
-        with open('.env', 'w+') as f:
-            password = ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
-            f.write(f'\nDJANGO_SUPERUSER_PASSWORD={password}\n')
-        os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
-    else:
-        # Check if we have superuser password in there
-        with open('.env', 'r') as f:
-            data = f.read()
-
-        if not re.search('DJANGO_SUPERUSER_PASSWORD', data):
-            password = ''.join(
-                secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
-            with open('.env', 'a+') as f:
-                f.write(f'\nDJANGO_SUPERUSER_PASSWORD={password}\n')
+        if os.path.exists(os.path.join(os.getcwd(), 'venv', 'Scripts')):
+            # Using the /venv/Scripts/ environment
+            self.python_venv = os.path.join(os.getcwd(), 'venv', 'Scripts', 'python.exe')
         else:
-            password = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', data).group(1)
-        os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
+            # Using the /venv/bin/ environment
+            self.python_venv = os.path.join(os.getcwd(), 'venv', 'bin', 'python')
 
+        print('Installing pip packages to virtual environment...')
+        subprocess.run([self.python_venv, '-m', 'pip', 'install', '-r', 'requirements.txt'])
 
-def create_rio_user():
-    print('Creating admin Rio user...')
-    subprocess.run(['venv/bin/python', 'manage.py', 'create_test_admin_user'])
+        self.create_hidden_env()
 
+        print('Running Django Migrations...')
+        subprocess.run([self.python_venv, 'manage.py', 'makemigrations'])
+        subprocess.run([self.python_venv, 'manage.py', 'migrate'])
 
-def create_virtual_env():
-    if not os.path.exists('venv'):
-        # Creating venv
-        print('Creating virtual environment...')
-        subprocess.run([sys.executable, '-m', 'venv', 'venv/'])
+        print('Running Django Create Super User...')
+        subprocess.run(
+            [self.python_venv, 'manage.py', 'createsuperuser', '--username', 'admin', '--email', 'admin@admin.com',
+             '--noinput'])
+        with open('.env', 'r') as f:
+            password = f.read()
+        password = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', password).group(1)
+        print(f'Created super user:\nUsername: admin\nPassword: {password}\n--------------------')
 
+        print('Creating admin Rio user...')
+        subprocess.run([self.python_venv, 'manage.py', 'create_test_admin_user'])
 
-def django_migrations():
-    print('Running Django Migrations...')
-    subprocess.run(['venv/bin/python', 'manage.py', 'makemigrations'])
-    subprocess.run(['venv/bin/python', 'manage.py', 'migrate'])
+        print('Populating database with default data...')
+        subprocess.run([self.python_venv, 'manage.py', 'db_setup'])
 
+        print('Starting webserver...')
+        subprocess.run([self.python_venv, 'manage.py', 'runserver'])
 
-def install_pip_packages():
-    print('Installing pip packages to virtual environment...')
-    subprocess.run(['venv/bin/python', '-m', 'pip', 'install', '-r', 'requirements.txt'])
+    def create_hidden_env(self):
+        if not os.path.exists('.env'):
+            print('Creating .env file...')
+            with open('.env', 'w+') as f:
+                password = ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
+                f.write(f'\nDJANGO_SUPERUSER_PASSWORD={password}\n')
+            os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
+        else:
+            # Check if we have superuser password in there
+            with open('.env', 'r') as f:
+                data = f.read()
 
-
-def populate_db():
-    print('Populating database with default data...')
-    subprocess.run(['venv/bin/python', 'manage.py', 'db_setup'])
-
-
-def start_webserver():
-    print('Starting webserver...')
-    subprocess.run(['venv/bin/python', 'manage.py', 'runserver'])
-
-
-def main():
-    # Create a virtual env
-    create_virtual_env()
-
-    # Install the pip packages in our venv
-    install_pip_packages()
-
-    # Create .env file for admin password
-    create_hidden_env()
-
-    # Make Django migrations
-    django_migrations()
-
-    # Create superuser
-    create_django_superuser()
-
-    # Create RioUser
-    create_rio_user()
-
-    # Populate database with default data
-    populate_db()
-
-    # Start webserver
-    start_webserver()
+            if not re.search('DJANGO_SUPERUSER_PASSWORD', data):
+                password = ''.join(
+                    secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(8))
+                with open('.env', 'a+') as f:
+                    f.write(f'\nDJANGO_SUPERUSER_PASSWORD={password}\n')
+            else:
+                password = re.search('DJANGO_SUPERUSER_PASSWORD=(.*)$', data).group(1)
+            os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
 
 
 if __name__ == '__main__':
@@ -101,4 +74,5 @@ if __name__ == '__main__':
         if sys.argv[1] == '--purge':
             print('Removing database...')
             os.remove('db.sqlite3')
-    main()
+
+    Startup()

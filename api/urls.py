@@ -6,15 +6,16 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 app_name = 'api'
 urlpatterns = [
     # ----- Start v1 Endpoints ----- #
-    path('tag/list', views.v1_tag_list.as_view(), name='v1_tag'),
+    path('tag/list/', views.v1_tag_list.as_view(), name='v1_tag'),
     # ----- Start v2 Endpoints ----- #
+    path('v2/populatedb/', views.PopulateDB.as_view(), name='populatedb'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # path('v2/characters', views.characters, name='v2_characters'),
     # path('v2/importdata', views.ImportData.as_view(), name='v2_import_data'),
-    re_path(r"^v2/characters/(?P<name>.*?)?$", views.GenericView.as_view(), name='characters'),
-    re_path(r"^v2/tag/(?P<name>.*?)?$", views.GenericView.as_view(), name='tag'),
-    re_path(r"^v2/tagset/(?P<name>.*?)?$", views.GenericView.as_view(), name='tagset'),
-    re_path(r"^v2/community/(?P<name>.*?)?$", views.GenericView.as_view(), name='community'),
-    re_path(r"^v2/communityuser/(?P<name>.*?)?$", views.GenericView.as_view(), name='communityuser'),
+    re_path(r'^v2/characters/(?P<name>.*?)?/$', views.GenericView.as_view(), name='characters'),
+    re_path(r'^v2/tag/(?P<name>.*?)?/$', views.GenericView.as_view(), name='tag'),
+    re_path(r'^v2/tagset/(?P<name>.*?)?/$', views.GenericView.as_view(), name='tagset'),
+    re_path(r'^v2/community/(?P<name>.*?)?/$', views.GenericView.as_view(), name='community'),
+    re_path(r'^v2/communityuser/(?P<name>.*?)?/$', views.GenericView.as_view(), name='communityuser'),
 ]
