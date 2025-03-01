@@ -250,32 +250,28 @@ class CommunityUser(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(max_length=32, unique=True)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=True, null=True)
     tag_type = models.CharField(max_length=16)
-    description = models.CharField(max_length=300)
+    description = models.CharField(max_length=300, blank=True, null=True)
     active = models.BooleanField(default=True)
-    date_created = models.DateTimeField(auto_created=True, auto_now=True)
+    date_created = models.DateTimeField()
+    last_modified = models.DateTimeField(blank=True, null=True)
+    gecko_code = models.TextField(blank=True, null=True)
+    gecko_code_desc = models.CharField(blank=True, null=True, max_length=255)
 
-    valid_types = ['component', 'competition', 'community', 'client code', 'gecko code', 'test']
+    valid_types = ['component', 'competition', 'community', 'client_code', 'gecko_code', 'test']
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        self.last_modified = timezone.now()
+        return super(Tag, self).save(*args, **kwargs)
 
     def is_valid_type(self, content):
         if content.lower() in self.valid_types:
             return True
         return False
-
-    def to_dict_old(self):
-        return {
-            'id': self.pk,
-            'community_id': self.community.pk,
-            'name': self.name,
-            'type': self.tag_type,
-            'desc': self.description,
-            'active': self.active,
-            'date_created': self.date_created
-        }
 
     def to_dict(self):
         return {
@@ -285,7 +281,7 @@ class Tag(models.Model):
             'type': self.tag_type,
             'description': self.description,
             'active': self.active,
-            'date_created': self.date_created
+            'date_created': str(self.date_created)
         }
 
 
@@ -353,9 +349,9 @@ class TagSet(models.Model):
             'type': self.type,
             'community': self.community.name,
             'community_id': self.community.pk,
-            'start_date': self.start_date,
-            'end_date': self.end_date,
-            'tags': [i.to_json() for i in self.tags.all()],
+            'start_date': str(self.start_date),
+            'end_date': str(self.end_date),
+            'tags': [i.to_dict() for i in self.tags.all()],
         }
 
 

@@ -1,25 +1,31 @@
 <table class="table table-hover" id="gamemodes_table{% if type %}_{{ type }}{% endif %}">
     <thead>
         <tr>
-            <th scope="col" class="ps-3 col col-3">Name
+            <th scope="col" class="ps-3 col col-2">Name
                 <i class="bi bi-funnel filter-icon"></i>
                 <div class="filter-box">
                     <input type="text" class="form-control filter-input" placeholder="Filter by name">
                 </div>
             </th>
-            <th scope="col" class="col col-3">Type
+            <th scope="col" class="col col-2">Type
                 <i class="bi bi-funnel filter-icon"></i>
                 <div class="filter-box">
                     <input type="text" class="form-control filter-input" placeholder="Filter by type">
                 </div>
             </th>
-            <th scope="col" class="col col-3">Start Date
+            <th scope="col" class="col col-2">Official
+                <i class="bi bi-funnel filter-icon"></i>
+                <div class="filter-box">
+                    <input type="text" class="form-control filter-input" placeholder="Filter by official">
+                </div>
+            </th>
+            <th scope="col" class="col col-2">Start Date
                 <i class="bi bi-funnel filter-icon"></i>
                 <div class="filter-box">
                     <input type="text" class="form-control filter-input" placeholder="Filter by date">
                 </div>
             </th>
-            <th scope="col" class="col col-3">End Date
+            <th scope="col" class="col col-2">End Date
                 <i class="bi bi-funnel filter-icon"></i>
                 <div class="filter-box">
                     <input type="text" class="form-control filter-input" placeholder="Filter by date">
@@ -34,6 +40,7 @@
             <tr>
                 <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
                 <td>{{ tag_set.type }}</td>
+                <td>{{ tag_set.community.community_type }}</td>
                 <td>{{ tag_set.start_date }}</td>
                 <td>
                 {{ tag_set.end_date }}
@@ -50,6 +57,7 @@
             <tr>
                 <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
                 <td>{{ tag_set.type }}</td>
+                <td>{{ tag_set.community.community_type }}</td>
                 <td>{{ tag_set.start_date }}</td>
                 <td>
                 {{ tag_set.end_date }}
@@ -65,6 +73,7 @@
             <tr>
                 <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
                 <td>{{ tag_set.type }}</td>
+                <td>{{ tag_set.community.community_type }}</td>
                 <td>{{ tag_set.start_date }}</td>
                 <td>
                 {{ tag_set.end_date }}

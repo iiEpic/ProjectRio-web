@@ -29,6 +29,10 @@ Project Rio - {{ tag.name }}
                 <td>{{ tag.date_created }}</td>
             </tr>
             <tr>
+                <td>Last Modified</td>
+                <td>{{ tag.last_modified }}</td>
+            </tr>
+            <tr>
                 <td>Tag Type</td>
                 <td>{{ tag.tag_type }}</td>
             </tr>
@@ -40,6 +44,24 @@ Project Rio - {{ tag.name }}
                 <td>Description</td>
                 <td>{{ tag.description }}</td>
             </tr>
+            {% if tag.gecko_code is not None %}
+            <tr>
+                <td>Gecko Code Description</td>
+                <td>{{ tag.gecko_code_desc }}</td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeckoCode{{ tag.id }}" aria-expanded="false" aria-controls="#collapseGeckoCode{{ tag.id }}">
+                        Gecko Code
+                    </button>
+                    <div class="collapse" style="width:100px;" id="collapseGeckoCode{{ tag.id }}">
+                        <div class="card card-body user-select-all mt-2 p-1 ps-2">
+                            {{ tag.gecko_code }}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
         </table>
     </div>
 </div>
