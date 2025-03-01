@@ -1,5 +1,6 @@
 import json
 import requests
+
 from api import models
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -209,6 +210,19 @@ class Tags(View):
 class Tagsets(View):
     # TagSets are called "Gamemodes" on the front-end
     def get(self, request, *args, **kwargs):
+
+        # Check if request has any get arguments
+        if len(request.GET) != 0:
+            # Key should only be type at this point
+            if list(request.GET.keys())[0] == 'type':
+                data = [i.to_dict() for i in
+                        models.TagSet.objects.filter(community__community_type__iexact=request.GET.get('type'))]
+        else:
+            data = [i.to_dict() for i in models.TagSet.objects.all()]
+
+        print(data)
+        print(json.dumps(data, indent=2))
+
         # Check if request has any get arguments
         if len(request.GET) != 0:
             # Key should only be type at this point

@@ -38,6 +38,7 @@ def generic_get_request_json(model_name, **kwargs):
     except IndexError:
         # Chances are the kwargs is empty, continue as normal
         pass
+
     if kwargs['name'].lower() in ['', 'all']:
         return {'endpoint': kwargs['request'].get_full_path(),
                 'results': get_all_objects_dict(model_name)
@@ -319,6 +320,14 @@ def get_character(**kwargs):
             return {'endpoint': kwargs['request'].get_full_path(),
                     'results': character_model.to_dict()
                     }
+    else:
+        characters = []
+        for character_model in models.Character.objects.all():
+            characters.append(character_model.to_dict())
+        return {
+            'endpoint': kwargs['request'].get_full_path(),
+            'results': characters
+        }
 
 
 def get_community(request, **kwargs):

@@ -32,41 +32,28 @@
     </thead>
     <tbody id="table-body-tags{% if type %}-{{ type|lower }}{% endif %}">
         {% for tag in tags %}
-        {% if active == 'True'%}
-            {% if tag.active %}
             <tr>
                 <td scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-dark">{{ tag.name }}</a></td>
                 <td class="col-md-1">{{ tag.active }}</td>
                 <td class="col-md-2">{{ tag.date_created }}</td>
                 <td class="col-md-2">{{ tag.description }}</td>
-                <td class="col-md-1">12345678</td>
-                <td class="col-md-2">Fake Gecko Code Description</td>
+                <td class="col-md-1">
+                    {% if tag.gecko_code is not None %}
+                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeckoCode{{ tag.id }}" aria-expanded="false" aria-controls="#collapseGeckoCode{{ tag.id }}">
+                        Gecko Code
+                    </button>
+                    <div class="collapse" id="collapseGeckoCode{{ tag.id }}">
+                        <div class="card card-body user-select-all mt-2 p-1 ps-2">
+                            {{ tag.gecko_code }}
+                        </div>
+                    </div>
+                    {% else %}
+                    None
+                    {% endif %}
+                </td>
+                <td class="col-md-2">{{ tag.gecko_code_desc }}</td>
                 <td class="col-md-1">{{ tag.tag_type }}</td>
             </tr>
-            {% endif %}
-        {% elif active == 'False' %}
-            {% if not tag.active %}
-            <tr>
-                <td scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-dark">{{ tag.name }}</a></td>
-                <td class="col-md-1">{{ tag.active }}</td>
-                <td class="col-md-2">{{ tag.date_created }}</td>
-                <td class="col-md-2">{{ tag.description }}</td>
-                <td class="col-md-1">12345678</td>
-                <td class="col-md-2">Fake Gecko Code Description</td>
-                <td class="col-md-1">{{ tag.tag_type }}</td>
-            </tr>
-            {% endif %}
-        {% else %}
-            <tr>
-                <td scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tags' tag.name %}" class="link-dark">{{ tag.name }}</a></td>
-                <td class="col-md-1">{{ tag.active }}</td>
-                <td class="col-md-2">{{ tag.date_created }}</td>
-                <td class="col-md-2">{{ tag.description }}</td>
-                <td class="col-md-1">12345678</td>
-                <td class="col-md-2">Fake Gecko Code Description</td>
-                <td class="col-md-1">{{ tag.tag_type }}</td>
-            </tr>
-        {% endif %}
         {% endfor %}
     </tbody>
 </table>
