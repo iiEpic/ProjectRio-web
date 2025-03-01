@@ -4,7 +4,7 @@ import random
 from api.authentication import TokenAuthentication
 from api.forms import PopulateDBForm, TagForm
 from api.models import Tag as TagModel
-from api.models import CommunityUser, Game, OngoingGame, TagSet, Token
+from api.models import Community, CommunityUser, Game, OngoingGame, RioUser, TagSet, Token
 from datetime import datetime, UTC
 from django.db.models import Q
 from django.http import JsonResponse
@@ -32,8 +32,44 @@ class Tag(APIView):
 
     def post(self, request, *args, **kwargs):
         form = TagForm(request.POST)
+        rio_user = RioUser.objects.filter(user=self.request.user).first()
+
         if form.is_valid():
-            return JsonResponse({'status': 'successful'})
+            # Check if user has permissions to create a Tag
+            # Check if user has permissions to create a Tag for this specific community
+
+            # Make sure that tag does not use the same name as an existing tag, comm, or tag_set
+            tag = TagModel.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            comm_name_check = Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_set = TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            if tag or comm_name_check or tag_set:
+                form.add_error('name', 'Conflicting tag, community or tagset name.')
+                return JsonResponse({'status': 'failed', 'errors': form.errors})
+
+            community = Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
+            if community is None:
+                form.add_error('community_name', 'Community does not exist by that name.')
+            else:
+                # Check if the user has access to view this community
+                community_user = CommunityUser.objects.filter(community=community, user=rio_user).first()
+                if community_user is None or community_user.banned:
+                    form.add_error('community_name', 'Community does not exist by that name.')
+                else:
+                    if not community_user.admin:
+                        # Now check if the user has admin status to add a Tag
+                        form.add_error('community_name',
+                                       'You do not have permissions to create a tag for this community. '
+                                       'Please ask an admin.')
+            # All our checks are done, check if we have any errors
+            if form.errors:
+                return JsonResponse({'status': 'failed', 'errors': form.errors})
+            else:
+                # No errors, create our Tag
+                form.cleaned_data['community'] = community
+                form.cleaned_data.pop('community_name')
+                tag = TagModel.objects.create(**form.cleaned_data)
+                return JsonResponse({'status': 'successful', 'tags': [tag.to_dict()]})
+        # Form had errors originally
         return JsonResponse({'status': 'failed', 'errors': form.errors})
 
 

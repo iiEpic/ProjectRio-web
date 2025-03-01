@@ -68,11 +68,6 @@ class GameHistoryAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(GeckoCodeTag)
-class GeckoCodeTagAdmin(admin.ModelAdmin):
-    pass
-
-
 @admin.register(Ladder)
 class LadderAdmin(admin.ModelAdmin):
     pass

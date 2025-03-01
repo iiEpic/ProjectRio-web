@@ -254,7 +254,7 @@ class Tag(models.Model):
     tag_type = models.CharField(max_length=16)
     description = models.CharField(max_length=300, blank=True, null=True)
     active = models.BooleanField(default=True)
-    date_created = models.DateTimeField()
+    date_created = models.DateTimeField(blank=True, null=True)
     last_modified = models.DateTimeField(blank=True, null=True)
     gecko_code = models.TextField(blank=True, null=True)
     gecko_code_desc = models.CharField(blank=True, null=True, max_length=255)
@@ -265,6 +265,8 @@ class Tag(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        if self.date_created is None:
+            self.date_created = timezone.now()
         self.last_modified = timezone.now()
         return super(Tag, self).save(*args, **kwargs)
 
@@ -355,19 +357,6 @@ class TagSet(models.Model):
             'start_date': str(self.start_date),
             'end_date': str(self.end_date),
             'tags': [i.to_dict() for i in self.tags.all()],
-        }
-
-
-class GeckoCodeTag(models.Model):
-    tag = models.ForeignKey(Tag, null=False, on_delete=models.CASCADE)
-    description = models.TextField(blank=True)
-    code = models.TextField(blank=True)
-
-    def to_dict(self):
-        return {
-            'tag_id': self.tag.pk,
-            'code': self.code,
-            'description': self.description
         }
 
 

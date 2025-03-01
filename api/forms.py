@@ -1,11 +1,50 @@
+import string
 from django import forms
+from api.models import Community, CommunityUser
 
 
 class TagForm(forms.Form):
     name = forms.CharField(label='Name', max_length=32)
-    type = forms.CharField(label='Tag Type', max_length=16)
+    tag_type = forms.CharField(label='Tag Type', max_length=16)
     description = forms.CharField(label='Description', max_length=300)
-    community_id = forms.IntegerField(label='Community ID')
+    community_name = forms.CharField(label='Name', max_length=255)
+    gecko_code = forms.CharField(widget=forms.Textarea, required=False)
+    gecko_code_desc = forms.CharField(widget=forms.Textarea, required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tag_type = cleaned_data.get('tag_type')
+        gecko_code = cleaned_data.get('gecko_code')
+        if tag_type == 'Gecko Code':
+            if not gecko_code:
+                self.add_error('gecko_code', 'This field is required when type is Gecko Code.')
+                return
+
+            cleaned_code = gecko_code.replace('\r', '').replace('\n', '')
+            line_length = 17
+            lines = [cleaned_code[i:i + line_length] for i in range(0, len(cleaned_code), line_length)]
+
+            for line in lines:
+                if len(line) != line_length:
+                    self.add_error('gecko_code', 'Gecko Code is not properly formatted. '
+                                                 'Lines should be 17 characters long.')
+                    return
+
+                if line[8] != ' ':
+                    self.add_error('gecko_code', 'There should be a space after every 8 characters.')
+                    return
+
+                for i, char in enumerate(line):
+                    if i == 8:
+                        continue  # Skip the space
+                    if char not in string.hexdigits:
+                        self.add_error('gecko_code', 'Gecko Code is not in hexadecimal format.')
+                        return
+
+    def is_valid(self):
+        """Check if value consists only of valid emails."""
+        # Use the parent's handling of required fields, etc.
+        return super().is_valid()
 
 
 class TagSetForm(forms.Form):
