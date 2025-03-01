@@ -356,7 +356,7 @@ class TagSet(models.Model):
             'community_id': self.community.pk,
             'start_date': str(self.start_date),
             'end_date': str(self.end_date),
-            'tags': [i.to_dict() for i in self.tags.all()],
+            'tags': [{'id': i.id, 'name': i.name} for i in self.tags.all()],
         }
 
 

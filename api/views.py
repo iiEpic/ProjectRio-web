@@ -3,8 +3,7 @@ import random
 
 from api.authentication import TokenAuthentication
 from api.forms import PopulateDBForm, TagForm
-from api.models import Tag as TagModel
-from api.models import Community, CommunityUser, Game, OngoingGame, RioUser, TagSet, Token
+from api import models as api_models
 from datetime import datetime, UTC
 from django.db.models import Q
 from django.http import JsonResponse
@@ -20,7 +19,7 @@ class Tag(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        tag_objects = TagModel.objects.filter(tag_type__in=['Gecko Code', 'Client Code', 'Component'])
+        tag_objects = api_models.Tag.objects.filter(tag_type__in=['Gecko Code', 'Client Code', 'Component'])
 
         if request.query_params:
             query = Q()
@@ -32,26 +31,26 @@ class Tag(APIView):
 
     def post(self, request, *args, **kwargs):
         form = TagForm(request.POST)
-        rio_user = RioUser.objects.filter(user=self.request.user).first()
+        rio_user = api_models.RioUser.objects.filter(user=self.request.user).first()
 
         if form.is_valid():
             # Check if user has permissions to create a Tag
             # Check if user has permissions to create a Tag for this specific community
 
             # Make sure that tag does not use the same name as an existing tag, comm, or tag_set
-            tag = TagModel.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
-            comm_name_check = Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
-            tag_set = TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag = api_models.Tag.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            comm_name_check = api_models.Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_set = api_models.TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
             if tag or comm_name_check or tag_set:
                 form.add_error('name', 'Conflicting tag, community or tagset name.')
                 return JsonResponse({'status': 'failed', 'errors': form.errors})
 
-            community = Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
+            community = api_models.Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
             if community is None:
                 form.add_error('community_name', 'Community does not exist by that name.')
             else:
                 # Check if the user has access to view this community
-                community_user = CommunityUser.objects.filter(community=community, user=rio_user).first()
+                community_user = api_models.CommunityUser.objects.filter(community=community, user=rio_user).first()
                 if community_user is None or community_user.banned:
                     form.add_error('community_name', 'Community does not exist by that name.')
                 else:
@@ -67,10 +66,27 @@ class Tag(APIView):
                 # No errors, create our Tag
                 form.cleaned_data['community'] = community
                 form.cleaned_data.pop('community_name')
-                tag = TagModel.objects.create(**form.cleaned_data)
+                tag = api_models.Tag.objects.create(**form.cleaned_data)
                 return JsonResponse({'status': 'successful', 'tags': [tag.to_dict()]})
         # Form had errors originally
         return JsonResponse({'status': 'failed', 'errors': form.errors})
+
+
+class TagSet(APIView):
+    authentication_classes = [JWTAuthentication, TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        tagset_objects = api_models.TagSet.objects.all()
+
+        if request.query_params:
+            query = Q()
+            for k, v in request.query_params.items():
+                query &= Q(**{k: v})  # Build the AND query
+            tagset_objects = tagset_objects.filter(query)
+
+        return JsonResponse(
+            {'status': 'successful', 'tagsets': [i.to_dict() for i in tagset_objects], 'count': len(tagset_objects)})
 
 
 class PopulateDB(APIView):
@@ -99,8 +115,8 @@ class PopulateDB(APIView):
             return JsonResponse({'results': 'Database does not accept CPU games'})
 
         # Ensure both players actually exist as Rio Users
-        home_player = Token.objects.filter(key=form.cleaned_data['home_player']).first()
-        away_player = Token.objects.filter(key=form.cleaned_data['away_player']).first()
+        home_player = api_models.Token.objects.filter(key=form.cleaned_data['home_player']).first()
+        away_player = api_models.Token.objects.filter(key=form.cleaned_data['away_player']).first()
         if home_player is None:
             return JsonResponse({'results': 'Home player not found.'})
         if away_player is None:
@@ -132,8 +148,8 @@ class PopulateDB(APIView):
         # Confirm that both users are community members for given TagSet
         # Get TagSet obj to verify users
 
-        home_comm_user = CommunityUser.objects.filter(user=home_player, community=tag_set.community).first()
-        away_comm_user = CommunityUser.objects.filter(user=away_player, community=tag_set.community).first()
+        home_comm_user = api_models.CommunityUser.objects.filter(user=home_player, community=tag_set.community).first()
+        away_comm_user = api_models.CommunityUser.objects.filter(user=away_player, community=tag_set.community).first()
 
         if home_comm_user is None or away_comm_user is None:
             return JsonResponse({'results': 'One or both users are not part of the community for this TagSet.'})
@@ -143,16 +159,16 @@ class PopulateDB(APIView):
         unique_id = False
         game_id = int(form.cleaned_data['game_id'].replace(',', ''), 16)
         while not unique_id:
-            game = Game.objects.filter(game_id=game_id).first()
+            game = api_models.Game.objects.filter(game_id=game_id).first()
             if game is None:
                 unique_id = True
             else:
                 game_id = random.getrandbits(32)
 
         # Delete ongoing game row once game is submitted
-        OngoingGame.objects.filter(game_id=game_id).delete()
+        api_models.OngoingGame.objects.filter(game_id=game_id).delete()
 
-        game = Game.objects.create(
+        game = api_models.Game.objects.create(
             game_id=game_id,
             away_player=away_player,
             home_player=home_player,
