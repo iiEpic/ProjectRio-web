@@ -2,104 +2,39 @@ import json
 import random
 
 from api.authentication import TokenAuthentication
-from api.forms import PopulateDBForm
-from api.helpers import *
+from api.forms import PopulateDBForm, TagForm
+from api.models import Tag as TagModel
 from api.models import CommunityUser, Game, OngoingGame, TagSet, Token
 from datetime import datetime, UTC
+from django.db.models import Q
 from django.http import JsonResponse
-from rest_framework.views import APIView
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.views import APIView
 
 
 # Create your views here.
-class GenericView(APIView):
-    """
-    This will get or create specified object
-    GET: Returns all or specific specified object
-    POST: Creates specified object
-    """
-    authentication_classes = [TokenAuthentication, JWTAuthentication]
+class Tag(APIView):
+    authentication_classes = [JWTAuthentication, TokenAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        mapping = {
-            'tag': 'Tag',
-            'tagset': 'TagSet',
-            'community': 'Community',
-            'communityuser': 'CommunityUser',
-            'characters': 'Character',
-        }
-        return JsonResponse(generic_get_request_json(model_name=mapping.get(request.path.split('/')[3]),
-                                                     request=request, **kwargs))
+        tag_objects = TagModel.objects.filter(tag_type__in=['Gecko Code', 'Client Code', 'Component'])
+
+        if request.query_params:
+            query = Q()
+            for k, v in request.query_params.items():
+                query &= Q(**{k: v})  # Build the AND query
+            tag_objects = tag_objects.filter(query)
+
+        return JsonResponse({'status': 'successful', 'tags': [i.to_dict() for i in tag_objects], 'count': len(tag_objects)})
 
     def post(self, request, *args, **kwargs):
-        mapping = {
-            'tag': 'Tag',
-            'tagset': 'TagSet',
-            'community': 'Community',
-            'communityuser': 'CommunityUser'
-        }
-        return JsonResponse(generic_post_request_json(model_name=mapping.get(request.path.split('/')[3]),
-                                                      request=request, **kwargs))
-
-
-class v1_tag_list(APIView):
-    authentication_classes = [TokenAuthentication, JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        # name = models.CharField(max_length=32, unique=True)
-        # tag_type = models.CharField(max_length=16)
-        # description = models.CharField(max_length=300)
-        # active = models.BooleanField(default=True)
-        # date_created
-        output = {
-            "Tags": [
-                {
-                    "active": True,
-                    "comm_id": 1,
-                    "date_created": 1677633618,
-                    "desc": "Both teams always have 5 stars",
-                    "gecko_code": "00892ad6 000100ff\n",
-                    "gecko_code_desc": "Both teams always have 5 stars.",
-                    "id": 7,
-                    "name": "Unlimited Stars",
-                    "type": "Gecko Code"
-                },
-                {
-                    "active": True,
-                    "comm_id": 1,
-                    "date_created": 1679262056,
-                    "desc": "Both players will use the random teams with random captains",
-                    "id": 16,
-                    "name": "Draft Randoms",
-                    "type": "Component"
-                },
-                {
-                    "active": True,
-                    "comm_id": 1,
-                    "date_created": 1679890869,
-                    "desc": "Disables the built in manual fielder select code. Can be overriden by a gecko code version of MFS",
-                    "id": 39,
-                    "name": "Disable Manual Fielder Select",
-                    "type": "Client Code"
-                },
-            ]
-        }
-
-        tags = list()
-        result = models.Tag.objects.filter(tag_type__in=["Gecko Code", "Client Code", "Component"])
-        for tag in result:
-            tag_dict = tag.to_dict()
-            if tag.tag_type == 'Gecko Code':
-                result = models.GeckoCodeTag.objects.filter(tag__pk=tag.pk).first()
-                if result is None:
-                    tag_dict = tag_dict | result.to_dict()
-            else:
-                tag_dict = tag_dict | {"gecko_code_desc": "", "gecko_code": ""}
-            tags.append(tag_dict)
-        return JsonResponse({'Tags': tags})
+        form = TagForm(request.POST)
+        if form.is_valid():
+            return JsonResponse({'status': 'successful'})
+        return JsonResponse({'status': 'failed', 'errors': form.errors})
 
 
 class PopulateDB(APIView):
@@ -214,8 +149,3 @@ class PopulateDB(APIView):
                 'game_id': game.id
             }
         )
-
-#
-#     # Ignore game if it's a CPU game
-#     if request.json['Home Player'] == "CPU" or request.json['Away Player'] == "CPU":
-#         return abort(400, 'Database does not accept CPU games')

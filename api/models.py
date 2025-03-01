@@ -281,7 +281,10 @@ class Tag(models.Model):
             'type': self.tag_type,
             'description': self.description,
             'active': self.active,
-            'date_created': str(self.date_created)
+            'gecko_code': self.gecko_code,
+            'gecko_code_desc': self.gecko_code_desc,
+            'date_created': str(self.date_created),
+            'last_modified': str(self.last_modified)
         }
 
 
