@@ -2,6 +2,7 @@ import json
 import requests
 
 from api import models
+from api.forms import TagForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -9,6 +10,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import render, redirect, reverse, HttpResponse
 from django.views import View
 from frontend.forms import LoginForm, RegisterForm
+from django.http import JsonResponse
 
 
 class CreateCommunity(View):
@@ -39,6 +41,8 @@ class CreateCommunity(View):
 
 class ViewCommunities(View):
     def get(self, request, *args, **kwargs):
+        # TODO :: Fix this
+
         try:
             if kwargs['name'][-1] == '/':
                 kwargs['name'] = kwargs['name'][:-1]
@@ -181,91 +185,84 @@ class Register(View):
 
 
 class Tags(View):
+
+    def create(self, request):
+        riouser = models.RioUser.objects.filter(user=request.user).first()
+        communities = models.CommunityUser.objects.filter(user=riouser, admin=True)
+        return render(request, 'frontend/create_tag.html', context={'communities': communities})
+
     def get(self, request, *args, **kwargs):
-        try:
-            if kwargs['name'][-1] == '/':
-                kwargs['name'] = kwargs['name'][:-1]
-        except IndexError:
-            # Chances are the kwargs is empty, continue as normal
-            pass
-        if kwargs['name'].lower() in ['', 'all']:
-            # We are returning the entire tag database
-            tag_list = models.Tag.objects.all()
-            return render(request, 'frontend/all_items.html', context={'item_type': 'tags',
-                                                                       'tags': tag_list})
-        else:
-            # Check if community being requested actually exists
-            tag_object = models.Tag.objects.filter(name__iexact=kwargs['name']).first()
+
+        # Check if we are creating a new TagSet
+        if request.path == '/tag/create/':
+            return self.create(request)
+
+        # Check if we are looking for a specific TagSet
+        if request.resolver_match.kwargs:
+            tag_object = models.Tag.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
             if tag_object is not None:
-                # Found Tag, get all public tag sets that it is apart of
                 tag_sets = models.TagSet.objects.filter(tags__name__iexact=tag_object.name)
                 return render(request, 'frontend/view_tag.html',
                               context={'tag': tag_object, 'tag_sets': tag_sets})
-            else:
-                # Tag does not exist
-                return render(request, 'frontend/view_tag.html',
-                              context={'tag': None, 'tag_name': kwargs['name']})
+
+        # If we made it here, we are returning all TagSets to the user
+        tag_list = models.Tag.objects.all()
+        return render(
+            request,
+            'frontend/all_items.html',
+            context={
+                'item_type': 'tags',
+                'tags': tag_list
+                }
+            )
+
+    def post(self, request):
+        form = TagForm(request.POST)
+        if form.is_valid():
+            # TODO :: Ensure we did all the checks..
+            form.cleaned_data['community'] = models.Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
+            form.cleaned_data.pop('community_name')
+            tag_object = models.Tag.objects.create(**form.cleaned_data)
+
+            return redirect(reverse('frontend:tag_detail',
+                                    kwargs={'slug': tag_object.slug}))
 
 
 class Tagsets(View):
     # TagSets are called "Gamemodes" on the front-end
+
+    def create(self, request):
+        return render(request, 'wip.html', context={})
+
     def get(self, request, *args, **kwargs):
+        # TODO : Rework this entire thing
 
-        # Check if request has any get arguments
-        if len(request.GET) != 0:
-            # Key should only be type at this point
-            if list(request.GET.keys())[0] == 'type':
-                data = [i.to_dict() for i in
-                        models.TagSet.objects.filter(community__community_type__iexact=request.GET.get('type'))]
-        else:
-            data = [i.to_dict() for i in models.TagSet.objects.all()]
+        # Check if we are creating a new TagSet
+        if request.path == '/gamemode/create/':
+            return self.create(request)
 
-        print(data)
-        print(json.dumps(data, indent=2))
-
-        # Check if request has any get arguments
-        if len(request.GET) != 0:
-            # Key should only be type at this point
-            if list(request.GET.keys())[0] == 'type':
-                tag_set_list = models.TagSet.objects.filter(community__community_type__iexact=request.GET.get('type'))
-                return render(request, 'frontend/all_items.html',
-                              context={'item_type': 'gamemodes',
-                                       'tag_sets': tag_set_list,
-                                       'type': request.GET.get('type')
-                                       }
-                              )
-        try:
-            if kwargs['name'][-1] == '/':
-                kwargs['name'] = kwargs['name'][:-1]
-        except IndexError:
-            # Chances are the kwargs is empty, continue as normal
-            pass
-        if kwargs['name'].lower() in ['', 'all']:
-            # We are returning the entire tag database
-            tag_set_list = models.TagSet.objects.all()
-            return render(request, 'frontend/all_items.html', context={'item_type': 'gamemodes',
-                                                                       'tag_sets': tag_set_list})
-        else:
-            # Check if community being requested actually exists
-            tag_set_object = models.TagSet.objects.filter(name__iexact=kwargs['name']).first()
-            if tag_set_object is not None:
-                # Found Tagset, get community if public
-                if request.user.is_authenticated:
-                    user_object = models.RioUser.objects.filter(user=request.user).first()
-                else:
-                    return render(request, 'frontend/view_gamemode.html',
-                                  context={'tag_set': tag_set_object})
-                if tag_set_object.community.private and models.CommunityUser.objects.filter(
-                        user=user_object, community=tag_set_object.community).first() is not None:
-                    community = tag_set_object.community
-                else:
-                    community = None
-                return render(request, 'frontend/view_gamemode.html',
-                              context={'tag_set': tag_set_object, 'community': community})
-            else:
-                # Tag does not exist
+        # Check if we are looking for a specific TagSet
+        if request.resolver_match.kwargs:
+            tagset = models.TagSet.objects.filter(name__iexact=request.resolver_match.kwargs['gamemode_name']).first()
+            if tagset is None:
                 return render(request, 'frontend/view_gamemode.html',
                               context={'tag_set': None, 'tag_set_name': kwargs['name']})
+
+            return render(request, 'frontend/view_gamemode.html', context={'tag_set': tagset})
+
+        # If we made it here, we are returning all TagSets to the user
+        data = models.TagSet.objects.all()
+
+        # This will get either Official or Unofficial gamemodes
+        if 'type' in request.GET:
+            data = [i for i in data.filter(community__community_type__iexact=request.GET.get('type'))]
+
+        return render(request, 'frontend/all_items.html',
+                      context={'item_type': 'gamemodes',
+                               'tag_sets': data,
+                               'type': request.GET.get('type') if 'type' in request.GET else None
+                               }
+                      )
 
 
 class Users(View):

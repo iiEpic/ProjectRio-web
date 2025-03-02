@@ -1,3 +1,5 @@
+import re
+import time
 from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
@@ -5,12 +7,13 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 import rest_framework.authtoken.models
 
 
 class Token(rest_framework.authtoken.models.Token):
-    key = models.CharField(_("Key"), max_length=40, db_index=True, unique=True)
+    key = models.CharField(_("Key"), max_length=50, db_index=True, unique=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, related_name='auth_tokens',
         on_delete=models.CASCADE, verbose_name=_("User")
@@ -187,7 +190,8 @@ class RioUser(models.Model):
 
 
 class Community(models.Model):
-    name = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=64, unique=True)
+    slug = models.CharField(max_length=64, unique=True, blank=True, null=True)
     sponsor = models.ForeignKey(RioUser, blank=True, null=True, on_delete=models.CASCADE)
     community_type = models.CharField(max_length=16, help_text='Official, Unofficial')
     private = models.BooleanField(default=True)
@@ -200,6 +204,10 @@ class Community(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        return super(Community, self).save(*args, **kwargs)
 
     def get_number_active_tagsets(self):
         return len([i for i in self.tagset_set.all() if i.is_active()])
@@ -249,15 +257,18 @@ class CommunityUser(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=32, unique=True)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.CharField(max_length=255, unique=True, blank=True, null=True)
     tag_type = models.CharField(max_length=16)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=True, null=True)
+
     description = models.CharField(max_length=300, blank=True, null=True)
+    gecko_code = models.TextField(blank=True, null=True)
+    gecko_code_desc = models.CharField(blank=True, null=True, max_length=255)
+
     active = models.BooleanField(default=True)
     date_created = models.DateTimeField(blank=True, null=True)
     last_modified = models.DateTimeField(blank=True, null=True)
-    gecko_code = models.TextField(blank=True, null=True)
-    gecko_code_desc = models.CharField(blank=True, null=True, max_length=255)
 
     valid_types = ['component', 'competition', 'community', 'client_code', 'gecko_code', 'test']
 
@@ -267,8 +278,13 @@ class Tag(models.Model):
     def save(self, *args, **kwargs):
         if self.date_created is None:
             self.date_created = timezone.now()
+        self.slug = slugify(self.name)
         self.last_modified = timezone.now()
         return super(Tag, self).save(*args, **kwargs)
+
+    def display_gecko_code(self):
+        formatted_string = re.sub(r"([a-fA-F0-9]{8} [a-fA-F0-9]{8})", r"\1<br/>", self.gecko_code)
+        return formatted_string
 
     def is_valid_type(self, content):
         if content.lower() in self.valid_types:
@@ -276,18 +292,30 @@ class Tag(models.Model):
         return False
 
     def to_dict(self):
-        return {
+        """
+        Converts the Tag model instance to a dictionary for API responses.
+        """
+        data = {
             'id': self.pk,
-            'community_id': self.community.pk,
             'name': self.name,
-            'type': self.tag_type,
+            'slug': self.slug,
+            'tag_type': self.tag_type,
             'description': self.description,
             'active': self.active,
             'gecko_code': self.gecko_code,
             'gecko_code_desc': self.gecko_code_desc,
-            'date_created': str(self.date_created),
-            'last_modified': str(self.last_modified)
         }
+
+        if self.community:
+            data['community_id'] = self.community.pk
+            data['community_name'] = self.community.name  # Add community name
+
+        if self.date_created:
+            data['date_created'] = int(time.mktime(self.date_created.timetuple()))  # Unix timestamp
+        if self.last_modified:
+            data['last_modified'] = int(time.mktime(self.last_modified.timetuple()))  # Unix timestamp
+
+        return data
 
 
 class TagSet(models.Model):
@@ -295,7 +323,7 @@ class TagSet(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
     tags = models.ManyToManyField(Tag, blank=True)
     name = models.CharField(max_length=120, unique=True)
-    type = models.CharField(max_length=120, help_text='Season, League, or Tournament')  # Season, league, tournament.
+    tagset_type = models.CharField(max_length=120, help_text='Season, League, or Tournament')  # Season, league, tournament.
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 
@@ -325,6 +353,7 @@ class TagSet(models.Model):
             }
 
     def is_active(self):
+        print(self.start_date)
         if self.start_date > timezone.now():
             return True
         # Check if gamemode start date is in the past AND end date is in the future
@@ -351,12 +380,13 @@ class TagSet(models.Model):
         return {
             'id': self.pk,
             'name': self.name,
-            'type': self.type,
+            'tagset_type': self.tagset_type,
             'community': self.community.name,
             'community_id': self.community.pk,
+            'community_type': self.community.community_type,
             'start_date': str(self.start_date),
             'end_date': str(self.end_date),
-            'tags': [{'id': i.id, 'name': i.name} for i in self.tags.all()],
+            'tags': [i.to_dict() for i in self.tags.all()],
         }
 
 

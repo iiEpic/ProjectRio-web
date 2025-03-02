@@ -63,9 +63,9 @@
                             </button>
                             <div class="collapse" id="modes-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode' %}?type=unofficial" class="sidebar-link">Unofficial</a></li>
-                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode' %}?type=official" class="sidebar-link">Official</a></li>
-                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode' %}" class="sidebar-link">All</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode_list' %}?type=unofficial" class="sidebar-link">Unofficial</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode_list' %}?type=official" class="sidebar-link">Official</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode_list' %}" class="sidebar-link">All</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -98,9 +98,9 @@
                             </button>
                             <div class="collapse" id="tags-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Create Tags</a></li>
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Create Gamemode</a></li>
-                                    <li class="sidebar-li"><a href="{% url 'frontend:tags' %}" class="sidebar-link">View Tags</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:tag_create' %}" class="sidebar-link">Create Tags</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:gamemode_create' %}" class="sidebar-link">Create Gamemode</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:tag_list' %}" class="sidebar-link">View Tags</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -110,8 +110,8 @@
                             </button>
                             <div class="collapse" id="stats-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">User Stats</a></li>
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Character Stats</a></li>
+                                    <li class="sidebar-li"><a href="#" class="disabled">User Stats</a></li>
+                                    <li class="sidebar-li"><a href="#" class="disabled">Character Stats</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -122,8 +122,8 @@
                             <div class="collapse" id="misc-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                                     <li class="sidebar-li"><a href="{% url 'frontend:users' %}" class="sidebar-link">View All Users</a></li>
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">View Scoreboards</a></li>
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Pitch Visualizer</a></li>
+                                    <li class="sidebar-li"><a href="#" class="disabled">View Scoreboards</a></li>
+                                    <li class="sidebar-li"><a href="#" class="disabled">Pitch Visualizer</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -137,7 +137,7 @@
                                     {% if request.user.is_authenticated %}
                                     <li class="sidebar-li"><a class="sidebar-link" data-bs-toggle="modal" data-bs-target="#apimodal" style="cursor: pointer;">View Keys</a></li>
                                     <li class="sidebar-li"><a href="{% url 'schema-swagger-ui' %}" class="sidebar-link">API Docs</a></li>
-                                    <li class="sidebar-li"><a href="#" class="sidebar-link">Settings</a></li>
+                                    <li class="sidebar-li"><a href="#" class="disabled" disabled>Settings</a></li>
                                     <li class="sidebar-li"><a href="{% url 'frontend:logout' %}" class="sidebar-link">Sign Out</a></li>
                                     {% else %}
                                     <li class="sidebar-li"><a href="{% url 'frontend:register' %}" class="sidebar-link">Register</a></li>

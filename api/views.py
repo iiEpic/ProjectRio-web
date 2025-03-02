@@ -2,11 +2,12 @@ import json
 import random
 
 from api.authentication import TokenAuthentication
-from api.forms import PopulateDBForm, TagForm
+from api.forms import PopulateDBForm, TagForm, TagSetForm
 from api import models as api_models
 from datetime import datetime, UTC
 from django.db.models import Q
 from django.http import JsonResponse
+from django.utils.text import slugify
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -17,6 +18,10 @@ from rest_framework.views import APIView
 class Tag(APIView):
     authentication_classes = [JWTAuthentication, TokenAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
+
+    INVALID_NAMES = [
+        'create'
+    ]
 
     def get(self, request, *args, **kwargs):
         tag_objects = api_models.Tag.objects.filter(tag_type__in=['Gecko Code', 'Client Code', 'Component'])
@@ -34,14 +39,16 @@ class Tag(APIView):
         rio_user = api_models.RioUser.objects.filter(user=self.request.user).first()
 
         if form.is_valid():
-            # Check if user has permissions to create a Tag
-            # Check if user has permissions to create a Tag for this specific community
+            if form.cleaned_data.get('name').lower() in self.INVALID_NAMES:
+                form.add_error('name', 'Prohibited name.')
+                return JsonResponse({'status': 'failed', 'errors': form.errors})
 
             # Make sure that tag does not use the same name as an existing tag, comm, or tag_set
             tag = api_models.Tag.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_slugified = api_models.Tag.objects.filter(slug__iexact=slugify(form.cleaned_data.get('name'))).first()
             comm_name_check = api_models.Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
             tag_set = api_models.TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
-            if tag or comm_name_check or tag_set:
+            if tag or tag_slugified or comm_name_check or tag_set:
                 form.add_error('name', 'Conflicting tag, community or tagset name.')
                 return JsonResponse({'status': 'failed', 'errors': form.errors})
 
@@ -85,9 +92,75 @@ class TagSet(APIView):
                 query &= Q(**{k: v})  # Build the AND query
             tagset_objects = tagset_objects.filter(query)
 
-        return JsonResponse(
-            {'status': 'successful', 'tagsets': [i.to_dict() for i in tagset_objects], 'count': len(tagset_objects)})
+        tagset_objects = [i.to_dict() for i in tagset_objects]
 
+        if not request.data and not request.data.get('full_tags'):
+            for tagset in tagset_objects:
+                tagset['tags'] = [{'id': i['id'], 'name': i['name']} for i in tagset['tags']]
+
+        return JsonResponse(
+            {
+                'status': 'successful',
+                'tagsets': tagset_objects,
+                'count': len(tagset_objects)
+            }
+        )
+
+    def post(self, request, *args, **kwargs):
+        form = TagSetForm(request.POST)
+        rio_user = api_models.RioUser.objects.filter(user=self.request.user).first()
+
+        if form.is_valid():
+            # Check if name is unique
+            tag = api_models.Tag.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            comm_name_check = api_models.Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_set = api_models.TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            if tag or comm_name_check or tag_set:
+                form.add_error('name', 'Conflicting tag, community or tagset name.')
+                return JsonResponse({'status': 'failed', 'errors': form.errors})
+
+            community = api_models.Community.objects.filter(
+                name__iexact=form.cleaned_data.get('community_name')).first()
+            if community is None:
+                form.add_error('community_name', 'Community does not exist by that name.')
+            else:
+                # Check if the user has access to view this community
+                community_user = api_models.CommunityUser.objects.filter(community=community, user=rio_user).first()
+                if community_user is None or community_user.banned:
+                    form.add_error('community_name', 'Community does not exist by that name.')
+                else:
+                    if not community_user.admin:
+                        # Now check if the user has admin status to add a Tag
+                        form.add_error('community_name',
+                                       'You do not have permissions to create a tagset for this community. '
+                                       'Please ask an admin.')
+
+            # All our checks are done, check if we have any errors
+            if form.errors:
+                return JsonResponse({'status': 'failed', 'errors': form.errors})
+            else:
+                # No errors, create our Tagset
+                form.cleaned_data['community'] = community
+                form.cleaned_data.pop('community_name')
+                tags_to_add = []
+                for tag_id in form.cleaned_data['tags'].split(','):
+                    tag = api_models.Tag.objects.filter(id=tag_id).first()
+                    if tag.tag_type in ['Community', 'Competition']:
+                        form.add_error('tags', f'Tag with ID, {tag_id}, has an invalid tag type.')
+                        continue
+                    if tag is None:
+                        form.add_error('tags', f'Tag with ID, {tag_id}, does not exist.')
+                        continue
+                    tags_to_add.append(tag)
+
+                form.cleaned_data.pop('tags')
+                tagset = api_models.TagSet.objects.create(**form.cleaned_data)
+                for tag in tags_to_add:
+                    tagset.tags.add(tag)
+                tagset.save()
+                return JsonResponse({'status': 'successful', 'tags': [tagset.to_dict()]})
+        else:
+            return JsonResponse({'status': 'failed', 'errors': form.errors})
 
 class PopulateDB(APIView):
     authentication_classes = [TokenAuthentication, JWTAuthentication]

@@ -16,7 +16,7 @@ class TagForm(forms.Form):
         tag_type = cleaned_data.get('tag_type')
         gecko_code = cleaned_data.get('gecko_code')
         if tag_type == 'Gecko Code':
-            if not gecko_code:
+            if gecko_code is None:
                 self.add_error('gecko_code', 'This field is required when type is Gecko Code.')
                 return
 
@@ -41,19 +41,20 @@ class TagForm(forms.Form):
                         self.add_error('gecko_code', 'Gecko Code is not in hexadecimal format.')
                         return
 
-    def is_valid(self):
-        """Check if value consists only of valid emails."""
-        # Use the parent's handling of required fields, etc.
-        return super().is_valid()
-
 
 class TagSetForm(forms.Form):
-    community_id = forms.IntegerField(label='Community ID')
-    tags = forms.JSONField(label='Tags List')
+    community_name = forms.CharField(label='Community Name', max_length=120)
+    tags = forms.CharField(label='Tags', max_length=255)
     name = forms.CharField(label='Name', max_length=120)
-    type = forms.CharField(label='type', max_length=120)
+    tagset_type = forms.CharField(label='Tagset Type', max_length=120)  # Season, League, or Tournament
     start_date = forms.DateTimeField(label='Start Date')
     end_date = forms.DateTimeField(label='End Date')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tagset_type = cleaned_data.get('tagset_type')
+        if tagset_type not in ['League', 'Season', 'Tournament']:
+            self.add_error('tagset_type', 'Only types allowed are: [League, Season, Tournament]')
 
 
 class CommunityForm(forms.Form):

@@ -2,42 +2,89 @@
 {% load static %}
 
 {% block title %}
-{% if user is None %}
-Project Rio - No Community
-{% else %}
-Project Rio - {{ community.name }}
-{% endif %}
+Project Rio - Create Tag
 {% endblock %}
 
 {% block body %}
-
-{% if community is None %}
-
-<h1>Community does not exist, {{ community_name }}</h1>
-
-{% else %}
-
-{% if community.private %}
-<div class="alert alert-warning alert-dismissible show mt-3 fw-bold" style="width: 95%;" role="alert">
-  <i class="bi bi-exclamation-triangle me-2"></i>Community is private
+{% if error %}
+<div class="alert alert-danger mt-3" role="alert">
+    {{ error_code }}<br/>
+    {{ error }}<br/>
+    {% if form_errors %}{{ form_errors }}<br/>{% endif %}
 </div>
 {% endif %}
 
-<h1>UNDER CONSTRUCTION</h1>
+<form method="POST" class="needs-validation" novalidate>
+    {% csrf_token %}
+    <div class="card mt-3 w-50 mx-auto">
+        <div class="card-header">
+            <div class="fs-3">
+                Create Tag
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect01">Tag Type</label>
+                <select class="form-select" id="inputGroupSelect01" name="tag_type">
+                    <option value="0" selected>---</option>
+                    <option value="component">Component</option>
+                    <option value="competition">Competition</option>
+                    <option value="client_code">Client Code</option>
+                    <option value="gecko_code">Gecko Code</option>
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">Tag Name</span>
+                <input type="text" class="form-control" id="name" name="name" aria-label="Tag Name" aria-describedby="basic-addon1">
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect02">Community</label>
+                <select class="form-select" id="inputGroupSelect02" name="community_name">
+                    <option value="---" selected>---</option>
+                    {% for community_user in communities %}
+                    <option value="{{ community_user.community.slug }}">{{ community_user.community.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">Description</span>
+                <input type="text" class="form-control" id="description" name="description" aria-label="Description">
+            </div>
+            <div id="gecko_fields" style="display: none;">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Gecko Code Description</span>
+                    <input type="text" class="form-control" id="gecko_code_desc" name="gecko_code_desc" aria-label="Gecko Code Description">
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text">Gecko Code</span>
+                    <textarea class="form-control" style="min-height: 150px;" aria-label="Description" id="gecko_code" name="gecko_code"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-success float-end">Create Tag</button>
+        </div>
+    </div>
+</form>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tagTypeSelect = document.getElementById('inputGroupSelect01');
+        const geckoFields = document.getElementById('gecko_fields');
+        const geckoCodeDesc = document.getElementById('gecko_code_desc');
+        const geckoCode = document.getElementById('gecko_code');
 
-<p>Community page for <span class="fw-bold">[{{ community.name }}]</span></p>
+        function toggleGeckoFields() {
+            if (tagTypeSelect.value === 'gecko_code') {
+                geckoFields.style.display = 'block';
+            } else {
+                geckoFields.style.display = 'none';
+                geckoCodeDesc.value = ''; // Clear the field
+                geckoCode.value = '';     // Clear the field
+            }
+        }
 
-<h2>Tag Sets</h2>
-{% for tag_set in tag_sets %}
-<ul>
-    <li>{{ tag_set }}</li>
-    <ul>
-        {% for tag in tag_set.tags.all %}
-        <li>{{ tag }}</li>
-        {% endfor %}
-    </ul>
-</ul>
-{% endfor %}
-
-{% endif %}
+        tagTypeSelect.addEventListener('change', toggleGeckoFields);
+        toggleGeckoFields(); // Initial check on page load
+    });
+</script>
 {% endblock %}

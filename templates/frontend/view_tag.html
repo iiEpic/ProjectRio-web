@@ -54,10 +54,10 @@ Project Rio - {{ tag.name }}
                     <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeckoCode{{ tag.id }}" aria-expanded="false" aria-controls="#collapseGeckoCode{{ tag.id }}">
                         Gecko Code
                     </button>
-                    <div class="collapse" style="width:100px;" id="collapseGeckoCode{{ tag.id }}">
-                        <div class="card card-body user-select-all mt-2 p-1 ps-2">
-                            {{ tag.gecko_code }}
-                        </div>
+                    <div class="collapse" id="collapseGeckoCode{{ tag.id }}" style="width: fit-content;">
+                        <code class="card card-body user-select-all text-danger mt-2 p-1 ps-2 pe-2">
+                            {{ tag.display_gecko_code|safe }}
+                        </code>
                     </div>
                 </td>
             </tr>

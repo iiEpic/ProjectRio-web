@@ -95,7 +95,8 @@ class RunnerAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['name', 'slug', 'tag_type', 'date_created', 'last_modified']
+    list_filter = ['tag_type']
 
 
 @admin.register(Token)
