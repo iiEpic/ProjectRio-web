@@ -220,8 +220,29 @@ class Tags(View):
         form = TagForm(request.POST)
         if form.is_valid():
             # TODO :: Ensure we did all the checks..
+            riouser = models.RioUser.objects.filter(user=request.user).first()
             form.cleaned_data['community'] = models.Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
             form.cleaned_data.pop('community_name')
+            community_user = models.CommunityUser.objects.filter(community=form.cleaned_data['community'], user=riouser).first()
+
+            # The following is being checked:
+            # - Community exists by the name the user gave
+            # - CommunityUser exists for the community given and user trying to post
+            # - CommunityUser is an admin in that Community
+            # Check if the user has access to add a Tag to this community, and they didn't forge the post request
+            if form.cleaned_data['community'] is None or community_user is None or not community_user.admin:
+                form.add_error('community_name', 'Could not find a community with that name')
+                communities = models.CommunityUser.objects.filter(user=riouser, admin=True)
+                return render(
+                    request,
+                    'frontend/create_tag.html',
+                    context={'communities': communities, 'errors': form.errors}
+                )
+
+            if form.cleaned_data['gecko_code'] == '':
+                form.cleaned_data.pop('gecko_code')
+                form.cleaned_data.pop('gecko_code_desc')
+
             tag_object = models.Tag.objects.create(**form.cleaned_data)
 
             return redirect(reverse('frontend:tag_detail',
