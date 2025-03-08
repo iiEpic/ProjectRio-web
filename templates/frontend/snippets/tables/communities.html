@@ -14,7 +14,7 @@
         {% for community in communities %}
         <tr>
             <td scope="row" class="ps-3 col-md-2">
-                <a href="{% url 'frontend:community_detail' community.name %}" class="link-dark">{{ community.name }}</a>
+                <a href="{% url 'frontend:community_detail' community.slug %}" class="link-dark">{{ community.name }}</a>
                 {% if community.sponsor is None %}<span class="badge rounded-pill text-bg-warning">Unsponsored</span>{% endif %}
             </td>
             <td class="col-md-2">{{ community.date_created }}</td>

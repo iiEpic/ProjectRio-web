@@ -13,7 +13,7 @@
         {% for tag_set in tag_sets %}
             {% if not status or tag_set.get_status == status %}
                 <tr>
-                    <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode_detail' tag_set.name %}" class="link-dark">{{ tag_set.name }}</a></td>
+                    <td scope="row" class="ps-3"><a href="{% url 'frontend:gamemode_detail' tag_set.slug %}" class="link-dark">{{ tag_set.name }}</a></td>
                     <td>{{ tag_set.tagset_type|title }}</td>
                     <td>{{ tag_set.community.community_type|title }}</td>
                     <td>{{ tag_set.start_date }}</td>

@@ -1,23 +1,29 @@
 import random
 from .authentication import TokenAuthentication
 from datetime import datetime, UTC
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.permissions import IsAuthenticated
-from .forms import PopulateDBForm
+from django.db.models import Q
+from django.utils.text import slugify
+from .forms import PopulateDBForm, TagForm
 from .models import (
     Token, UserGroup, UserProfile, Character, CharacterChemistry,
     Community, Role, CommunityUser, Tag, TagSet, Game, GameRoster,
     GameEventSummary, GameEvent, Ladder
 )
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 from .serializers import (
     UserGroupSerializer, UserProfileSerializer, CharacterSerializer,
     CharacterChemistrySerializer, CommunitySerializer, RoleSerializer,
     CommunityUserSerializer, TagSerializer, TagSetSerializer, GameSerializer,
     GameRosterSerializer, GameEventSummarySerializer, GameEventSerializer, LadderSerializer
 )
+
+INVALID_NAMES = [
+    'create'
+]
 
 
 class UserGroupDetail(APIView):
@@ -368,6 +374,60 @@ class LadderList(APIView):
         return Response(serializer.data)
 
 
+class TagCreate(APIView):
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        form = TagForm(request.POST)
+        user_profile = UserProfile.objects.filter(user=self.request.user).first()
+
+        if user_profile is None:
+            return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        if form.is_valid():
+            if form.cleaned_data.get('name').lower() in INVALID_NAMES:
+                form.add_error('name', 'Prohibited name.')
+                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Make sure that tag does not use the same name as an existing tag, comm, or tag_set
+            tag = Tag.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_slugified = Tag.objects.filter(slug__iexact=slugify(form.cleaned_data.get('name'))).first()
+            comm_name_check = Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_set = TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            if tag or tag_slugified or comm_name_check or tag_set:
+                form.add_error('name', 'Conflicting tag, community or tagset name.')
+                return Response({'status': 'failed', 'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            community = Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
+            if community is None:
+                form.add_error('community_name', 'Community does not exist by that name.')
+            else:
+                # Check if the user has access to view this community
+                community_user = CommunityUser.objects.filter(community=community, user=user_profile.user).first()
+                if community_user is None or community_user.status == 'banned':
+                    form.add_error('community_name', 'Community does not exist by that name.')
+                else:
+                    if not community_user.admin:
+                        # Now check if the user has admin status to add a Tag
+                        form.add_error('community_name',
+                                       'You do not have permissions to create a tag for this community. '
+                                       'Please ask an admin.')
+            # All our checks are done, check if we have any errors
+            if form.errors:
+                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # No errors, create our Tag
+                form.cleaned_data['community'] = community
+                form.cleaned_data.pop('community_name')
+                tag = Tag.objects.create(**form.cleaned_data)
+                return Response({'tags': [tag.to_dict()]}, status=status.HTTP_201_CREATED)
+        # Form had errors originally
+        return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 class PopulateDB(APIView):
     authentication_classes = [TokenAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
@@ -463,10 +523,8 @@ class PopulateDB(APIView):
         )
 
 
-#
-# # Create your views here.
-# class Tag(APIView):
-#     authentication_classes = [JWTAuthentication, TokenAuthentication, SessionAuthentication]
+# class TagCreate(APIView):
+#     authentication_classes = [TokenAuthentication, SessionAuthentication]
 #     permission_classes = [IsAuthenticated]
 #
 #     INVALID_NAMES = [
@@ -474,7 +532,7 @@ class PopulateDB(APIView):
 #     ]
 #
 #     def get(self, request, *args, **kwargs):
-#         tag_objects = api_models.Tag.objects.filter(tag_type__in=['Gecko Code', 'Client Code', 'Component'])
+#         tag_objects = Tag.objects.filter(tag_type__in=['Gecko Code', 'Client Code', 'Component'])
 #
 #         if request.query_params:
 #             query = Q()
@@ -527,6 +585,11 @@ class PopulateDB(APIView):
 #                 return JsonResponse({'status': 'successful', 'tags': [tag.to_dict()]})
 #         # Form had errors originally
 #         return JsonResponse({'status': 'failed', 'errors': form.errors})
+
+
+#
+# # Create your views here.
+#
 #
 #
 # class TagSet(APIView):

@@ -15,22 +15,22 @@ from django.http import JsonResponse
 
 
 class Community(LoginRequiredMixin, View):
-    def create(self):
-        communities = models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')
-        return render(self.request, 'frontend/create_community.html', context={'communities': communities})
 
     def get(self, request, *args, **kwargs):
 
         # Check if we are creating a new TagSet
         if request.path == '/community/create/':
-            return self.create()
+            return render(request, 'frontend/create_community.html', context={})
 
         # Check if we are looking for a specific TagSet
         if request.resolver_match.kwargs:
             community_object = models.Community.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
             # Check if community_object is None, which means the community does not exist
             # Check if requested community is private, if so ensure we have proper permissions to view
-            if community_object is None or (community_object.private and request.user not in [i for i in community_object.members.all()]):
+            if (community_object is None or
+                    (community_object.private and request.user not in [i for i in community_object.members.all()]) and
+                not self.request.user.is_staff
+            ):
                 return render(request, 'frontend/view_community.html',
                               context={
                                   'community': None,
@@ -49,14 +49,18 @@ class Community(LoginRequiredMixin, View):
             )
 
         # If we made it here, we are returning all communities that are public and the user is apart of
-        communities = []
-        for item in models.CommunityUser.objects.filter(user=self.request.user):
-            communities.append(item.community)
+        # unless a user is a staff member, then return it all
+        if self.request.user.is_staff:
+            communities = list(models.Community.objects.all())
+        else:
+            communities = []
+            for item in models.CommunityUser.objects.filter(user=self.request.user):
+                communities.append(item.community)
 
-        for public_community in models.Community.objects.filter(private=False):
-            communities.append(public_community)
+            for public_community in models.Community.objects.filter(private=False):
+                communities.append(public_community)
 
-        communities = list(set(communities))
+            communities = list(set(communities))
 
         return render(
             request,
@@ -67,21 +71,15 @@ class Community(LoginRequiredMixin, View):
             }
         )
 
-class CreateCommunity(View):
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect(reverse('frontend:login'))
-        return render(request, 'frontend/create_community.html', context={})
-
     def post(self, request, *args, **kwargs):
         data = {**request.POST}
         if 'global_link' in data.keys():
             data['global_link'] = 1 if data['global_link'][0] == 'on' else 0
 
-        rio_user = models.RioUser.objects.get(user=request.user)
+        user_object = models.UserProfile.objects.get(user=request.user)
         url = request.build_absolute_uri(reverse('api:community'))
         headers = {
-            'Authorization': f"Token {rio_user.api_key}"
+            'Authorization': f"Token {user_object.api_key}"
         }
         response = requests.post(url, headers=headers, data=data)
 
@@ -262,12 +260,12 @@ class Tagsets(LoginRequiredMixin, View):
 
         # Check if we are looking for a specific TagSet
         if request.resolver_match.kwargs:
-            tagset = models.TagSet.objects.filter(name__iexact=request.resolver_match.kwargs['gamemode_name']).first()
+            tagset = models.TagSet.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
             community_user = models.CommunityUser.objects.filter(user=request.user, community=tagset.community,
                                                                  status='active').first()
             if tagset is None or community_user is None:
                 return render(request, 'frontend/view_gamemode.html',
-                              context={'tag_set': None, 'tag_set_name': kwargs['gamemode_name']})
+                              context={'tag_set': None, 'tag_set_name': kwargs['slug']})
 
             return render(request, 'frontend/view_gamemode.html', context={'tag_set': tagset})
 

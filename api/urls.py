@@ -6,6 +6,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 app_name = 'api'
 urlpatterns = [
     # ----- Start v2 Endpoints ----- #
+    # Create paths
+    path('v2/tags/create/', views.TagCreate.as_view(), name='tag-create'),
+
     # Detailed paths
     path('v2/usergroups/<int:pk>/', views.UserGroupDetail.as_view(), name='usergroup-detail'),
     path('v2/userprofiles/<int:pk>/', views.UserProfileDetail.as_view(), name='userprofile-detail'),

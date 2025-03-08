@@ -72,6 +72,7 @@ class UserProfile(models.Model):
             models.Index(fields=['private']),
             models.Index(fields=['verified']),
         ]
+        ordering = ['user']
 
     def __str__(self):
         return f"Profile for {self.user.username}"
@@ -106,6 +107,9 @@ class Character(models.Model):
     running_stat_bar = models.IntegerField(default=0)
     fielding_stat_bar = models.IntegerField(default=0)
 
+    class Meta:
+        ordering = ['name']
+
     def __str__(self):
         return self.name
 
@@ -119,6 +123,9 @@ def character_pre_save(sender, instance, **kwargs):
 class CharacterChemistry(models.Model):
     character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name="compatibility")
     compatibility_values = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ['character']
 
     def __str__(self):
         return f"Compatibility for {self.character.name}"
@@ -141,6 +148,9 @@ class Community(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     members = models.ManyToManyField(User, through='CommunityUser', related_name='communities')
 
+    class Meta:
+        ordering = ['name']
+
     def __str__(self):
         return self.name
 
@@ -150,10 +160,31 @@ def community_pre_save(sender, instance, **kwargs):
     instance.slug = slugify(instance.name)
 
 
+class Permission(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+@receiver(pre_save, sender=Permission)
+def permission_pre_save(sender, instance, **kwargs):
+    instance.slug = slugify(instance.name)
+
+
 class Role(models.Model):
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(max_length=50, unique=True, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+    permissions = models.ManyToManyField(Permission, blank=True)
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -180,6 +211,9 @@ class CommunityUser(models.Model):
         default=CommunityUserStatus.INVITED.value,
     )
     date_joined = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['user']
 
     def __str__(self):
         return f"{self.user.username} in {self.community.name} as {self.role.name}"
@@ -208,6 +242,9 @@ class Tag(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['community', 'name']
+
     def __str__(self):
         return self.name
 
@@ -235,6 +272,9 @@ class TagSet(models.Model):
     tagset_type = models.CharField(max_length=120, choices=TAGSET_TYPES, db_index=True)
     start_date = models.DateTimeField(db_index=True)
     end_date = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ['community', 'name']
 
     def __str__(self):
         return self.name

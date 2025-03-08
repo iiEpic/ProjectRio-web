@@ -5,12 +5,16 @@ from api.models import *
 # Register your models here.
 @admin.register(UserGroup)
 class UserGroupAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['name', 'description', 'sponsor_limit', 'daily_limit', 'weekly_limit']
 
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['user', 'private', 'verified', 'get_groups']
+
+    def get_groups(self, object):
+        return [i for i in object.user_group.all()]
+    get_groups.short_description = 'Groups'
 
 
 @admin.register(Character)
@@ -28,9 +32,19 @@ class CommunityAdmin(admin.ModelAdmin):
     pass
 
 
+@admin.register(Permission)
+class PermissionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'description']
+
+
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['name', 'description', 'get_permissions']
+    filter_horizontal = ['permissions']
+
+    def get_permissions(self, object):
+        return [i.name for i in object.permissions.all()]
+    get_permissions.short_description = "Permissions"
 
 
 @admin.register(CommunityUser)
@@ -42,13 +56,13 @@ class CommunityUserAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'tag_type', 'date_created', 'last_modified']
+    list_display = ['name', 'community', 'tag_type', 'date_created', 'last_modified']
     list_filter = ['tag_type']
 
 
 @admin.register(TagSet)
 class TagSetAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['name', 'community', 'tagset_type', 'start_date', 'end_date']
 
 
 @admin.register(Game)

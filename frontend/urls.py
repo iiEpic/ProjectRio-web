@@ -12,7 +12,7 @@ urlpatterns = [
     # Gamemodes (TagSet)
     path("gamemode/", views.Tagsets.as_view(), name='gamemode_list'),
     path("gamemode/create/", views.Tagsets.as_view(), name='gamemode_create'),
-    path("gamemode/<str:gamemode_name>/", views.Tagsets.as_view(), name='gamemode_detail'),
+    path("gamemode/<str:slug>/", views.Tagsets.as_view(), name='gamemode_detail'),
 
     # Tags
     path('tag/', views.Tags.as_view(), name='tag_list'),
@@ -22,7 +22,7 @@ urlpatterns = [
     # Communities
     path('community/', views.Community.as_view(), name='community_list'),
     path('community/create/', views.Community.as_view(), name='community_create'),
-    path('communities/create/', views.CreateCommunity.as_view(), name='create_community'),
+    # path('communities/create/', views.CreateCommunity.as_view(), name='create_community'),
     path('community/<str:slug>/', views.Community.as_view(), name='community_detail'),
 
     # Users

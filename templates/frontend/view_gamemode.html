@@ -35,7 +35,7 @@ Project Rio - {{ tag_set.name }}
                     <td>Community</td>
                     <td>
                         {% if tag_set.community %}
-                            <a href="{% url 'frontend:community_detail' tag_set.community.name %}" class="link-dark">{{ tag_set.community.name }}</a>
+                            <a href="{% url 'frontend:community_detail' tag_set.community.slug %}" class="link-dark">{{ tag_set.community.name }}</a>
                         {% else %}
                             No community
                         {% endif %}

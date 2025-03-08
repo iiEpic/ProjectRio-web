@@ -87,7 +87,7 @@
                             </button>
                             <div class="collapse" id="community-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                                    <li class="sidebar-li"><a href="{% url 'frontend:create_community' %}" class="sidebar-link">Create Community</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:community_create' %}" class="sidebar-link">Create Community</a></li>
                                     <li class="sidebar-li"><a href="{% url 'frontend:community_list' %}" class="sidebar-link">View Communities</a></li>
                                 </ul>
                             </div>
@@ -130,7 +130,7 @@
                         <li class="border-top my-3"></li>
                         <li class="mb-1">
                             <button class="btn btn-toggle align-items-center rounded text-white" data-bs-toggle="collapse" data-bs-target="#account-collapse" aria-expanded="true">
-                            <i class="bi bi-list me-2"></i>Account
+                            <i class="bi bi-list me-2"></i>Account ({{ request.user }})
                             </button>
                             <div class="collapse show" id="account-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
