@@ -1,24 +1,9 @@
-<table class="table table-hover" id="tags_table{% if type %}_{{ type }}{% endif %}">
+<table class="table table-hover" id="tags_table{% if type %}_{{ type|lower }}{% endif %}">
     <thead>
         <tr>
-            <th scope="col" class="ps-3">Name
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by name">
-                </div>
-            </th>
-            <th scope="col">Active
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by status">
-                </div>
-            </th>
-            <th scope="col">Description
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by description">
-                </div>
-            </th>
+            <th scope="col" class="ps-3">Name</th>
+            <th scope="col">Active</th>
+            <th scope="col">Description</th>
             <th scope="col">Gecko Code</th>
             <th scope="col">Gecko Code Desc</th>
             <th scope="col">Type</th>
@@ -26,27 +11,29 @@
     </thead>
     <tbody id="table-body-tags{% if type %}-{{ type|lower }}{% endif %}">
         {% for tag in tags %}
-            <tr>
-                <td scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tag_detail' tag.slug %}" class="link-dark">{{ tag.name }}</a></td>
-                <td class="col-md-1">{{ tag.active }}</td>
-                <td class="col-md-2">{{ tag.description }}</td>
-                <td class="col-md-2">
-                    {% if tag.gecko_code is not None %}
-                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeckoCode{{ tag.id }}" aria-expanded="false" aria-controls="#collapseGeckoCode{{ tag.id }}">
-                        Gecko Code
-                    </button>
-                    <div class="collapse" id="collapseGeckoCode{{ tag.id }}">
-                        <code class="card card-body text-danger user-select-all mt-2 p-1 ps-2">
-                            {{ tag.display_gecko_code|safe }}
-                        </code>
-                    </div>
-                    {% else %}
-                    None
-                    {% endif %}
-                </td>
-                <td class="col-md-2">{{ tag.gecko_code_desc }}</td>
-                <td class="col-md-1">{{ tag.tag_type|title }}</td>
-            </tr>
+            {% if not status or status == 'all' or tag.active|slugify == status %}
+                <tr>
+                    <td scope="row" class="ps-3 col-md-2"><a href="{% url 'frontend:tag_detail' tag.slug %}" class="link-dark">{{ tag.name }}</a></td>
+                    <td class="col-md-1">{{ tag.active }}</td>
+                    <td class="col-md-2">{{ tag.description }}</td>
+                    <td class="col-md-2">
+                        {% if tag.gecko_code %}
+                        <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeckoCode{{ tag.id }}" aria-expanded="false" aria-controls="#collapseGeckoCode{{ tag.id }}">
+                            Gecko Code
+                        </button>
+                        <div class="collapse" id="collapseGeckoCode{{ tag.id }}">
+                            <code class="card card-body text-danger user-select-all mt-2 p-1 ps-2">
+                                {{ tag.display_gecko_code|safe }}
+                            </code>
+                        </div>
+                        {% else %}
+                        None
+                        {% endif %}
+                    </td>
+                    <td class="col-md-2">{{ tag.gecko_code_desc }}</td>
+                    <td class="col-md-1">{{ tag.tag_type|title }}</td>
+                </tr>
+            {% endif %}
         {% endfor %}
     </tbody>
 </table>

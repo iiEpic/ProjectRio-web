@@ -4,5 +4,9 @@
     <div class="card-header">
         <div>
             <span class="fs-{% if fs %}{{ fs }}{% else %}1{% endif %}">{% if type %}{{ type|title }}{% endif %} {{ name|title }}</span>
+            <div class="form-floating w-25 float-end">
+                <input type="text" class="form-control" id="searchInput{% if type %}_{{ type|lower }}{% endif %}_{{ name|lower }}" placeholder="Search for {% if type %}{{ type|title }}{% endif %} {{ name|title }}" onkeyup="searchTable_{% if type %}{{ type|lower }}_{% endif %}{{ name|lower }}()">
+                <label for="searchInput">Search for {% if type %}{{ type|title }}{% endif %} {{ name|title }}</label>
+            </div>
         </div>
     </div>

@@ -88,7 +88,7 @@
                             <div class="collapse" id="community-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                                     <li class="sidebar-li"><a href="{% url 'frontend:create_community' %}" class="sidebar-link">Create Community</a></li>
-                                    <li class="sidebar-li"><a href="{% url 'frontend:communities' %}" class="sidebar-link">View Communities</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:community_list' %}" class="sidebar-link">View Communities</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -121,7 +121,7 @@
                             </button>
                             <div class="collapse" id="misc-collapse">
                                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                                    <li class="sidebar-li"><a href="{% url 'frontend:users' %}" class="sidebar-link">View All Users</a></li>
+                                    <li class="sidebar-li"><a href="{% url 'frontend:user_list' %}" class="sidebar-link">View All Users</a></li>
                                     <li class="sidebar-li"><a href="#" class="disabled">View Scoreboards</a></li>
                                     <li class="sidebar-li"><a href="#" class="disabled">Pitch Visualizer</a></li>
                                 </ul>
@@ -159,24 +159,21 @@
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h1 class="modal-title fs-5" id="exampleModalLabel">{{ user.username }}'s keys</h1>
+                                    <h1 class="modal-title fs-5" id="exampleModalLabel">API Token</h1>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="card mb-3">
                                         <div class="card-header fw-bold">
-                                            API Key <button type="button" class="btn btn-outline-danger btn-sm float-end">Regenerate</button>
+                                            API Token
+                                            <span class="float-end" data-bs-toggle="tooltip" data-bs-title="Unavailable">
+                                                <button type="button" class="btn btn-primary btn-sm float-end" disabled>
+                                                    Regenerate
+                                                </button>
+                                            </span>
                                         </div>
                                         <div class="card-body">
-                                            <code class="user-select-all" onclick="copyText(this)" id="api_key_modal" data-bs-trigger="manual" data-bs-offset="0,10" data-bs-toggle="tooltip" data-bs-title="Copied!">{% get_user_api_key request.user.username %}</code>
-                                        </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="card-header fw-bold">
-                                            Rio Key <button type="button" class="btn btn-outline-danger btn-sm float-end">Regenerate</button>
-                                        </div>
-                                        <div class="card-body">
-                                            <code class="user-select-all" onclick="copyText(this)" id="rio_key_modal" data-bs-trigger="manual" data-bs-offset="0,10" data-bs-toggle="tooltip" data-bs-title="Copied!">{% get_user_rio_key request.user.username %}</code>
+                                            <code class="user-select-all" onclick="copyText(this)" id="api_key_modal" data-bs-trigger="manual" data-bs-offset="0,10" data-bs-toggle="tooltip" data-bs-title="Copied!">{% get_user_token request.user.username %}</code>
                                         </div>
                                     </div>
                                 </div>

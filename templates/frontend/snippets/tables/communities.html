@@ -1,37 +1,12 @@
 <table class="table table-hover" id="communities_table">
     <thead>
         <tr>
-            <th scope="col" class="ps-3">Name
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by name">
-                </div>
-            </th>
-            <th scope="col">Date Created
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by date">
-                </div>
-            </th>
-            <th scope="col">Description
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by description">
-                </div>
-            </th>
-            <th scope="col">Private
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by status">
-                </div>
-            </th>
-            <th scope="col">Tag Set Limit</th>
-            <th scope="col">Type
-                <i class="bi bi-funnel filter-icon"></i>
-                <div class="filter-box">
-                    <input type="text" class="form-control filter-input" placeholder="Filter by type">
-                </div>
-            </th>
+            <th scope="col" class="ps-3">Name</th>
+            <th scope="col">Date Created</th>
+            <th scope="col">Description</th>
+            <th scope="col">Private</th>
+            <th scope="col">Tag Set Limit</th></th>
+            <th scope="col">Type</th>
             <th scope="col">URL</th>
         </tr>
     </thead>
@@ -39,7 +14,7 @@
         {% for community in communities %}
         <tr>
             <td scope="row" class="ps-3 col-md-2">
-                <a href="{% url 'frontend:communities' community.name %}" class="link-dark">{{ community.name }}</a>
+                <a href="{% url 'frontend:community_detail' community.name %}" class="link-dark">{{ community.name }}</a>
                 {% if community.sponsor is None %}<span class="badge rounded-pill text-bg-warning">Unsponsored</span>{% endif %}
             </td>
             <td class="col-md-2">{{ community.date_created }}</td>

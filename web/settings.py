@@ -28,8 +28,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-APPEND_SLASH = True
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,11 +56,10 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
 
@@ -148,8 +145,7 @@ SWAGGER_SETTINGS = {
     'LOGIN_URL': 'frontend:login',
     'USE_SESSION_AUTH': False,
     'SECURITY_DEFINITIONS': {
-        'JWT Token': {'type': 'apiKey', 'name': 'Authorization', 'in': 'header'},
-        'API/Rio Key': {'type': 'apiKey', 'name': 'Authorization', 'in': 'header'},
+        'Token': {'type': 'apiKey', 'name': 'Authorization', 'in': 'header'}
     },
     'JSON_EDITOR': True,
     'SHOW_REQUEST_HEADERS': True,

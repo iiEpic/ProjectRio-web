@@ -55,9 +55,9 @@ Project Rio - {{ community.name }}
         </table>
     </div>
 </div>
-{% include 'frontend/snippets/cards/gamemodes.html' with type='Active' fs=2 tag_sets=tag_sets active='True' %}
-{% include 'frontend/snippets/cards/gamemodes.html' with type='Previous' fs=2 tag_sets=tag_sets active='False' %}
-{% include 'frontend/snippets/cards/tags.html' with type='Active' fs=2 tags=tags active='True' %}
-{% include 'frontend/snippets/cards/tags.html' with type='Inactive' fs=2 tags=tags active='False' %}
+{% include 'frontend/snippets/cards/gamemodes.html' with type='Active' fs=2 tag_sets=tag_sets status='Active' %}
+{% include 'frontend/snippets/cards/gamemodes.html' with type='Previous' fs=2 tag_sets=tag_sets status='Inactive' %}
+{% include 'frontend/snippets/cards/tags.html' with type='Active' fs=2 tags=tags status='true' %}
+{% include 'frontend/snippets/cards/tags.html' with type='Inactive' fs=2 tags=tags status='false' %}
 {% endif %}
 {% endblock %}

@@ -57,7 +57,7 @@ Project Rio - Users
                 {% for user in users %}
                 <tr>
                     <th scope="row" class="ps-3 col-md-2">{{ forloop.counter }}</th>
-                    <td class="col-md-2"><a href="{% url 'frontend:users' user.username %}" class="link-dark">{{ user.user.username }}</a></td>
+                    <td class="col-md-2"><a href="{% url 'frontend:user_detail' user.user.username %}" class="link-dark">{{ user.user.username }}</a></td>
                     <td class="col-md-2">{{ user.date_created }}</td>
                     <td class="col-md-4">
                         {% if user.private %}

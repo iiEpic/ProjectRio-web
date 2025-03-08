@@ -5,6 +5,7 @@ from api import models
 from api.forms import TagForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import render, redirect, reverse, HttpResponse
@@ -12,6 +13,59 @@ from django.views import View
 from frontend.forms import LoginForm, RegisterForm
 from django.http import JsonResponse
 
+
+class Community(LoginRequiredMixin, View):
+    def create(self):
+        communities = models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')
+        return render(self.request, 'frontend/create_community.html', context={'communities': communities})
+
+    def get(self, request, *args, **kwargs):
+
+        # Check if we are creating a new TagSet
+        if request.path == '/community/create/':
+            return self.create()
+
+        # Check if we are looking for a specific TagSet
+        if request.resolver_match.kwargs:
+            community_object = models.Community.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
+            # Check if community_object is None, which means the community does not exist
+            # Check if requested community is private, if so ensure we have proper permissions to view
+            if community_object is None or (community_object.private and request.user not in [i for i in community_object.members.all()]):
+                return render(request, 'frontend/view_community.html',
+                              context={
+                                  'community': None,
+                                  'community_name': kwargs['slug']
+                              })
+            tag_sets = models.TagSet.objects.filter(community=community_object)
+            tags = models.Tag.objects.filter(community=community_object)
+            return render(
+                request,
+                'frontend/view_community.html',
+                context={
+                    'community': community_object,
+                    'tag_sets': tag_sets,
+                    'tags': tags
+                }
+            )
+
+        # If we made it here, we are returning all communities that are public and the user is apart of
+        communities = []
+        for item in models.CommunityUser.objects.filter(user=self.request.user):
+            communities.append(item.community)
+
+        for public_community in models.Community.objects.filter(private=False):
+            communities.append(public_community)
+
+        communities = list(set(communities))
+
+        return render(
+            request,
+            'frontend/all_items.html',
+            context={
+              'item_type': 'communities',
+              'communities': communities
+            }
+        )
 
 class CreateCommunity(View):
     def get(self, request, *args, **kwargs):
@@ -37,62 +91,6 @@ class CreateCommunity(View):
         else:
             return redirect(reverse('frontend:communities',
                                     kwargs={'name': results['results']['community']['name']}))
-
-
-class ViewCommunities(View):
-    def get(self, request, *args, **kwargs):
-        # TODO :: Fix this
-
-        try:
-            if kwargs['name'][-1] == '/':
-                kwargs['name'] = kwargs['name'][:-1]
-        except IndexError:
-            # Chances are the kwargs is empty, continue as normal
-            pass
-        if kwargs['name'].lower() in ['', 'all']:
-            # We are returning the entire community database that isn't marked private
-            # Get all communities that are not marked "Private" if the requester is NOT staff
-            if request.user.is_anonymous:
-                public_list = models.Community.objects.filter(private=False)
-                return render(request, 'frontend/all_items.html', context={'item_type': 'communities',
-                                                                           'communities': public_list})
-            if not request.user.is_staff:
-                # User is not staff but try to find private communities the user is apart of
-                user_object = models.RioUser.objects.filter(user=request.user).first()
-                private_list = models.Community.objects.filter(communityuser__user__exact=user_object)
-                public_list = models.Community.objects.filter(private=False)
-                community_list = private_list | public_list
-            else:
-                community_list = models.Community.objects.all()
-            return render(request, 'frontend/all_items.html', context={'item_type': 'communities',
-                                                                       'communities': community_list})
-        else:
-            # Check if community being requested actually exists
-            community_object = models.Community.objects.filter(name__iexact=kwargs['name']).first()
-            if community_object is not None:
-                # Found Community, check if community is private and if the requester is a staff member
-                if community_object.private and not request.user.is_staff:
-                    # Community is private, see if requester has access to it
-                    if request.user.is_anonymous:
-                        return render(request, 'frontend/view_community.html',
-                                      context={'community': None,
-                                               'community_name': kwargs['name']})
-                    community_user_object = models.CommunityUser.objects.filter(
-                        user=request.user,
-                        community=community_object,
-                        banned=False).first()
-                    if community_user_object is None:
-                        # User does not have access to community
-                        return render(request, 'frontend/view_community.html', context={'community': None,
-                                                                              'community_name': kwargs['name']})
-                tag_sets = models.TagSet.objects.filter(community=community_object)
-                tags = models.Tag.objects.filter(community=community_object)
-                return render(request, 'frontend/view_community.html',
-                              context={'community': community_object, 'tag_sets': tag_sets, 'tags': tags})
-            else:
-                # Community does not exist
-                return render(request, 'frontend/view_community.html', context={'community': None,
-                                                                           'community_name': kwargs['name']})
 
 
 class Home(View):
@@ -184,24 +182,26 @@ class Register(View):
         return render(request, 'frontend/register.html', context={})
 
 
-class Tags(View):
+class Tags(LoginRequiredMixin, View):
 
-    def create(self, request):
-        riouser = models.RioUser.objects.filter(user=request.user).first()
-        communities = models.CommunityUser.objects.filter(user=riouser, admin=True)
-        return render(request, 'frontend/create_tag.html', context={'communities': communities})
+    def create(self):
+        communities = models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')
+        return render(self.request, 'frontend/create_tag.html', context={'communities': communities})
 
     def get(self, request, *args, **kwargs):
 
         # Check if we are creating a new TagSet
         if request.path == '/tag/create/':
-            return self.create(request)
+            return self.create()
 
         # Check if we are looking for a specific TagSet
         if request.resolver_match.kwargs:
             tag_object = models.Tag.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
             if tag_object is not None:
-                tag_sets = models.TagSet.objects.filter(tags__name__iexact=tag_object.name)
+                tag_sets = list(models.TagSet.objects.filter(tags__name__iexact=tag_object.name))
+                for tag_set in tag_sets.copy():
+                    if models.CommunityUser.objects.filter(user=request.user, community=tag_set.community, status='active').first() is None:
+                        tag_sets.remove(tag_set)
                 return render(request, 'frontend/view_tag.html',
                               context={'tag': tag_object, 'tag_sets': tag_sets})
 
@@ -219,20 +219,18 @@ class Tags(View):
     def post(self, request):
         form = TagForm(request.POST)
         if form.is_valid():
-            # TODO :: Ensure we did all the checks..
-            riouser = models.RioUser.objects.filter(user=request.user).first()
             form.cleaned_data['community'] = models.Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
             form.cleaned_data.pop('community_name')
-            community_user = models.CommunityUser.objects.filter(community=form.cleaned_data['community'], user=riouser).first()
+            community_user = models.CommunityUser.objects.filter(community=form.cleaned_data['community'], user=self.request.user).first()
 
             # The following is being checked:
             # - Community exists by the name the user gave
             # - CommunityUser exists for the community given and user trying to post
             # - CommunityUser is an admin in that Community
             # Check if the user has access to add a Tag to this community, and they didn't forge the post request
-            if form.cleaned_data['community'] is None or community_user is None or not community_user.admin:
+            if form.cleaned_data['community'] is None or community_user is None or community_user.role.name != 'Admin':
                 form.add_error('community_name', 'Could not find a community with that name')
-                communities = models.CommunityUser.objects.filter(user=riouser, admin=True)
+                communities = models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')
                 return render(
                     request,
                     'frontend/create_tag.html',
@@ -249,34 +247,42 @@ class Tags(View):
                                     kwargs={'slug': tag_object.slug}))
 
 
-class Tagsets(View):
+class Tagsets(LoginRequiredMixin, View):
     # TagSets are called "Gamemodes" on the front-end
 
-    def create(self, request):
-        return render(request, 'wip.html', context={})
+    def create(self):
+        return render(self.request, 'wip.html', context={})
 
     def get(self, request, *args, **kwargs):
-        # TODO : Rework this entire thing
+        # TODO: Rework this entire thing
 
         # Check if we are creating a new TagSet
         if request.path == '/gamemode/create/':
-            return self.create(request)
+            return self.create()
 
         # Check if we are looking for a specific TagSet
         if request.resolver_match.kwargs:
             tagset = models.TagSet.objects.filter(name__iexact=request.resolver_match.kwargs['gamemode_name']).first()
-            if tagset is None:
+            community_user = models.CommunityUser.objects.filter(user=request.user, community=tagset.community,
+                                                                 status='active').first()
+            if tagset is None or community_user is None:
                 return render(request, 'frontend/view_gamemode.html',
-                              context={'tag_set': None, 'tag_set_name': kwargs['name']})
+                              context={'tag_set': None, 'tag_set_name': kwargs['gamemode_name']})
 
             return render(request, 'frontend/view_gamemode.html', context={'tag_set': tagset})
 
-        # If we made it here, we are returning all TagSets to the user
-        data = models.TagSet.objects.all()
+        # Verify if the user has the ability to view each TagSet
+        community_user = models.CommunityUser.objects.filter(user=request.user)
+
+        data = []
+        for item in community_user:
+            for tagset in models.TagSet.objects.filter(community=item.community):
+                data.append(tagset)
 
         # This will get either Official or Unofficial gamemodes
         if 'type' in request.GET:
-            data = [i for i in data.filter(community__community_type__iexact=request.GET.get('type'))]
+            # data = [i for i in data.filter(community__community_type__iexact=request.GET.get('type'))]
+            data = [i for i in data if i.community.community_type.lower() == request.GET.get('type').lower()]
 
         return render(request, 'frontend/all_items.html',
                       context={'item_type': 'gamemodes',
@@ -286,42 +292,38 @@ class Tagsets(View):
                       )
 
 
-class Users(View):
+class Users(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        try:
-            if kwargs['username'][-1] == '/':
-                kwargs['username'] = kwargs['username'][:-1]
-        except IndexError:
-            # Chances are the kwargs is empty, continue as normal
-            pass
-        if kwargs['username'].lower() in ['', 'all']:
-            # We are returning the entire user database that isn't marked private
-            # Get all users that are not marked "Private" if the requester is NOT staff
-            if not request.user.is_staff:
-                user_list = models.RioUser.objects.filter(private=False)
-            else:
-                user_list = models.RioUser.objects.all()
-            return render(request, 'frontend/all_users.html', context={'users': user_list})
-        else:
-            # Check if user being requested actually exists
-            user_object = models.RioUser.objects.filter(user__username__iexact=kwargs['username']).first()
-            if user_object is not None:
-                # Found User, check if user is private and if the requester is a staff member
-                if user_object.private and not request.user.is_staff:
-                    # User is private, tell requester that the user does not exist
-                    return render(request, 'frontend/user.html', context={'user': None,
-                                                                          'username': kwargs['username']})
-                return render(request, 'frontend/user.html', context={'user': user_object})
-            else:
-                # User does not exist
-                return render(request, 'frontend/user.html', context={'user': None,
-                                                                      'username': kwargs['username']})
+        # TODO : Rework this entire thing
+
+        # Check if we are looking for a specific TagSet
+        if request.resolver_match.kwargs:
+            user_object = models.UserProfile.objects.filter(user__username__iexact=request.resolver_match.kwargs['username']).first()
+            # Check if user_object is None, which means the user does not exist
+            # Check if requested user is private, if so ensure we have proper permissions to view
+            if user_object is None or (user_object.private and not request.user.is_staff):
+                return render(request,
+                              'frontend/user.html',
+                              context={
+                                  'user': None,
+                                  'username': kwargs['username']
+                              }
+                              )
+
+            return render(request, 'frontend/user.html', context={'user': user_object})
+
+        user_objects = list(models.UserProfile.objects.all())
+        if not self.request.user.is_staff:
+            user_objects = [i for i in user_objects if not i.private]
+
+        return render(request, 'frontend/all_users.html', context={'users': user_objects})
+
 
     def post(self, request, *args, **kwargs):
         pass
 
 
-class UserBatting(View):
+class UserBatting(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user_object = models.RioUser.objects.filter(user__username__iexact=kwargs['username']).first()
         if user_object is not None:
@@ -332,7 +334,7 @@ class UserBatting(View):
         pass
 
 
-class UserPitching(View):
+class UserPitching(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user_object = models.RioUser.objects.filter(user__username__iexact=kwargs['username']).first()
         if user_object is not None:

@@ -1,104 +1,85 @@
-import re
-import time
-from datetime import datetime
+from django.db import models
 from django.contrib.auth.models import User
-from django.db import models
 from django.conf import settings
-from django.db import models
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.utils.text import slugify
-
 import rest_framework.authtoken.models
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
+from django.utils.text import slugify
+from django.utils import timezone
+import enum
+import re
 
 
 class Token(rest_framework.authtoken.models.Token):
     key = models.CharField(_("Key"), max_length=50, db_index=True, unique=True)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name='auth_tokens',
-        on_delete=models.CASCADE, verbose_name=_("User")
+    user = models.OneToOneField(  # Changed to OneToOneField
+        settings.AUTH_USER_MODEL, related_name='auth_token',
+        on_delete=models.CASCADE, verbose_name=_("User"), unique=True
     )
-    name = models.CharField(_("Name"), max_length=64)
-
-    class Meta:
-        unique_together = (('user', 'name'),)
-
-    def __str__(self):
-        return f"{self.user} : {self.name}"
-
-
-class ApiKey(models.Model):
-    token = models.OneToOneField(Token, on_delete=models.CASCADE, unique=True)
-    date_created = models.DateTimeField(auto_created=True, auto_now=True)
+    date_created = models.DateTimeField(auto_now_add=True)
     pings_daily = models.IntegerField(default=1)
     pings_weekly = models.IntegerField(default=7)
     last_ping_date = models.DateTimeField(blank=True, null=True)
     total_pings = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.token.key
+        return f"{self.user}"
 
 
-class ChemistryTable(models.Model):
-    mario = models.IntegerField(default=0)
-    luigi = models.IntegerField(default=0)
-    dk = models.IntegerField(default=0)
-    peach = models.IntegerField(default=0)
-    daisy = models.IntegerField(default=0)
-    yoshi = models.IntegerField(default=0)
-    diddy = models.IntegerField(default=0)
-    baby_mario = models.IntegerField(default=0)
-    baby_luigi = models.IntegerField(default=0)
-    bowser = models.IntegerField(default=0)
-    wario = models.IntegerField(default=0)
-    waluigi = models.IntegerField(default=0)
-    koopa_r = models.IntegerField(default=0)
-    toad_r = models.IntegerField(default=0)
-    boo = models.IntegerField(default=0)
-    toadette = models.IntegerField(default=0)
-    shy_guy_r = models.IntegerField(default=0)
-    birdo = models.IntegerField(default=0)
-    monty = models.IntegerField(default=0)
-    bowser_jr = models.IntegerField(default=0)
-    paratroopa_r = models.IntegerField(default=0)
-    pianta_b = models.IntegerField(default=0)
-    pianta_r = models.IntegerField(default=0)
-    pianta_y = models.IntegerField(default=0)
-    noki_b = models.IntegerField(default=0)
-    noki_r = models.IntegerField(default=0)
-    noki_g = models.IntegerField(default=0)
-    bro_h = models.IntegerField(default=0)
-    toadsworth = models.IntegerField(default=0)
-    toad_b = models.IntegerField(default=0)
-    toad_y = models.IntegerField(default=0)
-    toad_g = models.IntegerField(default=0)
-    toad_p = models.IntegerField(default=0)
-    magikoopa_b = models.IntegerField(default=0)
-    magikoopa_r = models.IntegerField(default=0)
-    magikoopa_g = models.IntegerField(default=0)
-    magikoopa_y = models.IntegerField(default=0)
-    king_boo = models.IntegerField(default=0)
-    petey = models.IntegerField(default=0)
-    dixie = models.IntegerField(default=0)
-    goomba = models.IntegerField(default=0)
-    paragoomba = models.IntegerField(default=0)
-    koopa_g = models.IntegerField(default=0)
-    paratroopa_g = models.IntegerField(default=0)
-    shy_guy_b = models.IntegerField(default=0)
-    shy_guy_y = models.IntegerField(default=0)
-    shy_guy_g = models.IntegerField(default=0)
-    shy_guy_bk = models.IntegerField(default=0)
-    dry_bones_gy = models.IntegerField(default=0)
-    dry_bones_g = models.IntegerField(default=0)
-    dry_bones_r = models.IntegerField(default=0)
-    dry_bones_b = models.IntegerField(default=0)
-    bro_f = models.IntegerField(default=0)
-    bro_b = models.IntegerField(default=0)
+@receiver(post_save, sender=User)
+def create_auth_token(sender, instance, created, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
+
+
+class UserGroup(models.Model):
+    name = models.CharField(max_length=32, unique=True, db_index=True)
+    slug = models.SlugField(max_length=32, unique=True, blank=True, null=True)
+    description = models.CharField(max_length=128, blank=True, null=True)
+    sponsor_limit = models.IntegerField(default=0)
+    daily_limit = models.IntegerField(default=0)
+    weekly_limit = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['daily_limit']),
+            models.Index(fields=['weekly_limit']),
+            models.Index(fields=['sponsor_limit']),
+        ]
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+@receiver(pre_save, sender=UserGroup)
+def usergroup_pre_save(sender, instance, **kwargs):
+    if not instance.slug:
+        instance.slug = slugify(instance.name)
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True, db_index=True)
+    user_group = models.ManyToManyField(UserGroup, blank=True)
+    active_url = models.CharField(max_length=50, unique=True, blank=True, null=True, db_index=True)
+    private = models.BooleanField(default=False)
+    verified = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['private']),
+            models.Index(fields=['verified']),
+        ]
+
+    def __str__(self):
+        return f"Profile for {self.user.username}"
 
 
 class Character(models.Model):
-    chemistry_table = models.ForeignKey(ChemistryTable, on_delete=models.CASCADE, null=False)
     name = models.CharField(max_length=16)
+    slug = models.SlugField(max_length=16, unique=True, blank=True, null=True)
     starting_addr = models.CharField(max_length=16)
     curve_ball_speed = models.IntegerField(default=0)
     fast_ball_speed = models.IntegerField(default=0)
@@ -128,299 +109,198 @@ class Character(models.Model):
     def __str__(self):
         return self.name
 
-    def to_dict(self):
-        return {
-            'char_id': self.pk,
-            'chemistry_table_id': self.chemistry_table.pk,
-            'name': self.name,
-            'starting_addr': self.starting_addr,
-            'curve_ball_speed': self.curve_ball_speed,
-            'fast_ball_speed': self.fast_ball_speed,
-            'curve': self.curve,
-            'fielding_arm': self.fielding_arm,
-            'batting_stance': self.batting_stance,
-            'nice_contact_spot_size': self.nice_contact_spot_size,
-            'perfect_contact_spot_size': self.perfect_contact_spot_size,
-            'slap_hit_power': self.slap_hit_power,
-            'charge_hit_power': self.charge_hit_power,
-            'bunting': self.bunting,
-            'hit_trajectory_mpp': self.hit_trajectory_mpp,
-            'hit_trajectory_mhl': self.hit_trajectory_mhl,
-            'speed': self.speed,
-            'throwing_arm': self.throwing_arm,
-            'character_class': self.character_class,
-            'weight': self.weight,
-            'captain': 'True' if self.captain == 1 else 'False',
-            'captain_star_hit_or_pitch': self.captain_star_hit_or_pitch,
-            'non_captain_star_swing': self.non_captain_star_swing,
-            'non_captain_star_pitch': self.non_captain_star_pitch,
-            'batting_stat_bar': self.batting_stat_bar,
-            'pitching_stat_bar': self.pitching_stat_bar,
-            'running_stat_bar': self.running_stat_bar,
-            'fielding_stat_bar': self.fielding_stat_bar,
-        }
+
+@receiver(pre_save, sender=Character)
+def character_pre_save(sender, instance, **kwargs):
+    if not instance.slug:
+        instance.slug = slugify(instance.name)
 
 
-class UserGroup(models.Model):
-    daily_limit = models.IntegerField(default=0)
-    weekly_limit = models.IntegerField(default=0)
-    sponsor_limit = models.IntegerField(default=0)
-    name = models.CharField(max_length=32, unique=True)
-    description = models.CharField(max_length=128, blank=True, null=True)
+class CharacterChemistry(models.Model):
+    character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name="compatibility")
+    compatibility_values = models.JSONField(default=dict)
 
     def __str__(self):
-        return self.name
-
-
-class RioUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    api_key = models.ForeignKey(ApiKey, blank=True, null=True, on_delete=models.CASCADE)
-    user_group = models.ManyToManyField(UserGroup, blank=True)
-    rio_key = models.OneToOneField(Token, blank=True, null=True, on_delete=models.CASCADE)
-    active_url = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    private = models.BooleanField(default=False)
-    verified = models.BooleanField(default=False)
-    date_created = models.DateTimeField(auto_created=True, auto_now=True)
-
-    def __str__(self):
-        return self.user.username
-
-    def username(self):
-        return self.user.username
+        return f"Compatibility for {self.character.name}"
 
 
 class Community(models.Model):
+    COMMUNITY_TYPES = (
+        ('official', 'Official'),
+        ('unofficial', 'Unofficial'),
+    )
+
     name = models.CharField(max_length=64, unique=True)
-    slug = models.CharField(max_length=64, unique=True, blank=True, null=True)
-    sponsor = models.ForeignKey(RioUser, blank=True, null=True, on_delete=models.CASCADE)
-    community_type = models.CharField(max_length=16, help_text='Official, Unofficial')
+    slug = models.SlugField(max_length=64, unique=True, blank=True, null=True)
+    sponsor = models.ForeignKey(User, blank=True, null=True, on_delete=models.CASCADE, related_name="sponsored_communities")
+    community_type = models.CharField(max_length=16, choices=COMMUNITY_TYPES)
     private = models.BooleanField(default=True)
     active_tag_set_limit = models.IntegerField(default=5)
     active_url = models.CharField(max_length=50, blank=True, null=True, unique=True)
     description = models.CharField(max_length=300, blank=True, null=True)
-    date_created = models.DateTimeField(auto_created=True, auto_now=True)
-
-    valid_types = ['official', 'unofficial']
+    date_created = models.DateTimeField(auto_now_add=True)
+    members = models.ManyToManyField(User, through='CommunityUser', related_name='communities')
 
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
-        return super(Community, self).save(*args, **kwargs)
 
-    def get_number_active_tagsets(self):
-        return len([i for i in self.tagset_set.all() if i.is_active()])
+@receiver(pre_save, sender=Community)
+def community_pre_save(sender, instance, **kwargs):
+    instance.slug = slugify(instance.name)
 
-    def is_valid_type(self, content):
-        if content.lower() in self.valid_types:
-            return True
-        return False
 
-    def to_dict(self):
-        return {
-            'id': self.pk,
-            'name': self.name,
-            'sponsor': self.sponsor.username(),
-            'sponsor_id': self.sponsor.user.pk,
-            'community_type': self.community_type,
-            'private': self.private,
-            'active_tag_set_limit': self.active_tag_set_limit,
-            'active_url': self.active_url,
-            'description': self.description,
-            'date_created': self.date_created
-        }
+class Role(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=50, unique=True, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+@receiver(pre_save, sender=Role)
+def role_pre_save(sender, instance, **kwargs):
+    instance.slug = slugify(instance.name)
+
+
+class CommunityUserStatus(enum.Enum):
+    INVITED = 'invited'
+    ACTIVE = 'active'
+    BANNED = 'banned'
 
 
 class CommunityUser(models.Model):
-    user = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE)
-    community = models.ForeignKey(Community, null=False, on_delete=models.CASCADE)
-    admin = models.BooleanField(default=False)
-    invited = models.BooleanField(default=False)
-    active = models.BooleanField(default=True)
-    banned = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_created=True, auto_now=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE)
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, default=1)
+    status = models.CharField(
+        max_length=10,
+        choices=[(tag.value, tag.name) for tag in CommunityUserStatus],
+        default=CommunityUserStatus.INVITED.value,
+    )
+    date_joined = models.DateTimeField(auto_now_add=True)
 
-    def to_dict(self):
-        return {
-            'id': self.pk,
-            'user': self.user.username(),
-            'user_id': self.user.pk,
-            'community': self.community.name,
-            'community_id': self.community.pk,
-            'admin': self.admin,
-            'invited': self.invited,
-            'active': self.active,
-            'banned': self.banned,
-            'date_joined': self.date_joined
-        }
+    def __str__(self):
+        return f"{self.user.username} in {self.community.name} as {self.role.name}"
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    slug = models.CharField(max_length=255, unique=True, blank=True, null=True)
-    tag_type = models.CharField(max_length=16)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=True, null=True)
+    TAG_TYPES = (
+        ('component', 'Component'),
+        ('competition', 'Competition'),
+        ('community', 'Community'),
+        ('client_code', 'Client Code'),
+        ('gecko_code', 'Gecko Code'),
+        ('test', 'Test'),
+    )
+
+    name = models.CharField(max_length=255, unique=True, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True, null=True, db_index=True)
+    tag_type = models.CharField(max_length=16, choices=TAG_TYPES, db_index=True)
+    community = models.ForeignKey('Community', on_delete=models.CASCADE, blank=True, null=True, db_index=True)
 
     description = models.CharField(max_length=300, blank=True, null=True)
     gecko_code = models.TextField(blank=True, null=True)
     gecko_code_desc = models.CharField(blank=True, null=True, max_length=255)
 
     active = models.BooleanField(default=True)
-    date_created = models.DateTimeField(blank=True, null=True)
-    last_modified = models.DateTimeField(blank=True, null=True)
-
-    valid_types = ['component', 'competition', 'community', 'client_code', 'gecko_code', 'test']
+    date_created = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        if self.date_created is None:
-            self.date_created = timezone.now()
-        self.slug = slugify(self.name)
-        self.last_modified = timezone.now()
-        return super(Tag, self).save(*args, **kwargs)
 
     def display_gecko_code(self):
         formatted_string = re.sub(r"([a-fA-F0-9]{8} [a-fA-F0-9]{8})", r"\1<br/>", self.gecko_code)
         return formatted_string
 
-    def is_valid_type(self, content):
-        if content.lower() in self.valid_types:
-            return True
-        return False
 
-    def to_dict(self):
-        """
-        Converts the Tag model instance to a dictionary for API responses.
-        """
-        data = {
-            'id': self.pk,
-            'name': self.name,
-            'slug': self.slug,
-            'tag_type': self.tag_type,
-            'description': self.description,
-            'active': self.active,
-            'gecko_code': self.gecko_code,
-            'gecko_code_desc': self.gecko_code_desc,
-        }
-
-        if self.community:
-            data['community_id'] = self.community.pk
-            data['community_name'] = self.community.name  # Add community name
-
-        if self.date_created:
-            data['date_created'] = int(time.mktime(self.date_created.timetuple()))  # Unix timestamp
-        if self.last_modified:
-            data['last_modified'] = int(time.mktime(self.last_modified.timetuple()))  # Unix timestamp
-
-        return data
+@receiver(pre_save, sender=Tag)
+def tag_pre_save(sender, instance, **kwargs):
+    instance.slug = slugify(instance.name)
 
 
 class TagSet(models.Model):
-    # This is referred to as a "Gamemode" on the website!
-    community = models.ForeignKey(Community, on_delete=models.CASCADE)
-    tags = models.ManyToManyField(Tag, blank=True)
-    name = models.CharField(max_length=120, unique=True)
-    tagset_type = models.CharField(max_length=120, help_text='Season, League, or Tournament')  # Season, league, tournament.
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    TAGSET_TYPES = (
+        ('season', 'Season'),
+        ('league', 'League'),
+        ('tournament', 'Tournament'),
+    )
 
-    valid_types = ['season', 'league', 'tournament']
+    community = models.ForeignKey('Community', on_delete=models.CASCADE, db_index=True)
+    tags = models.ManyToManyField('Tag', blank=True)
+    name = models.CharField(max_length=120, unique=True, db_index=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True, null=True)
+    tagset_type = models.CharField(max_length=120, choices=TAGSET_TYPES, db_index=True)
+    start_date = models.DateTimeField(db_index=True)
+    end_date = models.DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
 
+    def display_status(self):
+        now = timezone.now()
+        if self.start_date > now:
+            return '<span class="badge rounded-pill text-bg-danger">Inactive</span>'
+        elif self.start_date <= now <= self.end_date:
+            return '<span class="badge rounded-pill text-bg-success">In-progress</span>'
+        else:
+            return '<span class="badge rounded-pill text-bg-danger">Inactive</span>'
+
     def get_status(self):
-        if self.is_future():
-            return {
-                'status': 'future',
-                'message': 'Gamemode scheduled for future dates',
-                'alert': 'primary'
-            }
-        if self.in_progress():
-            return {
-                'status': 'in-progress',
-                'message': 'Gamemode is currently in-progress',
-                'alert': 'success'
-            }
-        if not self.is_active():
-            return {
-                'status': 'inactive',
-                'message': 'Gamemode is no longer active',
-                'alert': 'danger'
-            }
+        now = timezone.now()
+        if self.start_date > now:
+            return 'Active'
+        elif self.start_date <= now <= self.end_date:
+            return 'Active'
+        else:
+            return 'Inactive'
 
-    def is_active(self):
-        print(self.start_date)
-        if self.start_date > timezone.now():
-            return True
-        # Check if gamemode start date is in the past AND end date is in the future
-        if self.start_date < timezone.now() < self.end_date:
-            return True
-        return False
-
-    def in_progress(self):
-        if self.start_date < timezone.now() < self.end_date:
-            return True
-        return False
-
-    def is_future(self):
-        if self.start_date > timezone.now():
-            return True
-        return False
-
-    def is_valid_type(self, content):
-        if content.lower() in self.valid_types:
-            return True
-        return False
-
-    def to_dict(self):
-        return {
-            'id': self.pk,
-            'name': self.name,
-            'tagset_type': self.tagset_type,
-            'community': self.community.name,
-            'community_id': self.community.pk,
-            'community_type': self.community.community_type,
-            'start_date': str(self.start_date),
-            'end_date': str(self.end_date),
-            'tags': [i.to_dict() for i in self.tags.all()],
-        }
+    def display_alert(self):
+        now = timezone.now()
+        if self.start_date > now:
+            return {'status': 'future', 'message': 'Gamemode scheduled for future dates', 'alert': 'primary'}
+        elif self.start_date <= now <= self.end_date:
+            return {'status': 'in-progress', 'message': 'Gamemode is currently in-progress', 'alert': 'success'}
+        else:
+            return {'status': 'inactive', 'message': 'Gamemode is no longer active', 'alert': 'danger'}
 
 
-class OngoingGame(models.Model):
-    game_id = models.IntegerField()
-    date_time_start = models.IntegerField()
+@receiver(pre_save, sender=TagSet)
+def tagset_pre_save(sender, instance, **kwargs):
+    instance.slug = slugify(instance.name)
+
+
+class Game(models.Model):
+    GAME_STATUS = (
+        ('pending', 'Pending'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+        ('aborted', 'Aborted'),
+    )
+
+    game_id = models.IntegerField(unique=True)
+    away_player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='away_games')
+    home_player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='home_games')
+    date_time_start = models.DateTimeField(default=timezone.now)
+    date_time_end = models.DateTimeField(blank=True, null=True)
+    ranked = models.BooleanField(default=False)
+    netplay = models.BooleanField(default=True)
     stadium_id = models.IntegerField(default=0)
-    away_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='ongoing_away_player')
-    home_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='ongoing_home_player')
-    tag_set = models.ForeignKey(TagSet, null=False, on_delete=models.CASCADE)
-    away_captain = models.IntegerField(default=0)
-    home_captain = models.IntegerField(default=0)
-    away_roster_0_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_0_char')
-    away_roster_1_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_1_char')
-    away_roster_2_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_2_char')
-    away_roster_3_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_3_char')
-    away_roster_4_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_4_char')
-    away_roster_5_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_5_char')
-    away_roster_6_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_6_char')
-    away_roster_7_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_7_char')
-    away_roster_8_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='away_roster_8_char')
-    home_roster_0_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_0_char')
-    home_roster_1_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_1_char')
-    home_roster_2_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_2_char')
-    home_roster_3_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_3_char')
-    home_roster_4_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_4_char')
-    home_roster_5_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_5_char')
-    home_roster_6_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_6_char')
-    home_roster_7_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_7_char')
-    home_roster_8_char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE, related_name='home_roster_8_char')
+    away_score = models.IntegerField(default=0)
+    home_score = models.IntegerField(default=0)
+    innings_selected = models.IntegerField(default=3)
+    innings_played = models.IntegerField(default=3)
+    quitter = models.ForeignKey(User, blank=True, null=True, on_delete=models.CASCADE, related_name='quit_games')
+    valid = models.BooleanField(default=True)
+    average_ping = models.IntegerField(default=0)
+    lag_spikes = models.IntegerField(default=0)
+    version = models.CharField(max_length=50)
+    tag_set = models.ForeignKey('TagSet', null=True, on_delete=models.SET_NULL, blank=True)
+    status = models.CharField(max_length=10, choices=GAME_STATUS, default='pending')
     current_inning = models.IntegerField(default=0)
     current_half_inning = models.IntegerField(default=0)
-    current_away_score = models.IntegerField(default=0)
-    current_home_score = models.IntegerField(default=0)
     current_away_stars = models.IntegerField(default=0)
     current_home_stars = models.IntegerField(default=0)
     current_outs = models.IntegerField(default=0)
@@ -429,191 +309,57 @@ class OngoingGame(models.Model):
     current_runner_3b = models.BooleanField(default=False)
     batter_roster_loc = models.IntegerField(default=0)
     pitcher_roster_loc = models.IntegerField(default=0)
+    away_captain = models.ForeignKey('Character', null=True, on_delete=models.SET_NULL, related_name="away_captain")
+    home_captain = models.ForeignKey('Character', null=True, on_delete=models.SET_NULL, related_name="home_captain")
+
+    def __str__(self):
+        return f"Game {self.game_id} - {self.away_player} vs {self.home_player}"
 
 
-class Game(models.Model):
-    game_id = models.IntegerField()
-    away_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='game_away_player')
-    home_player = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE, related_name='game_home_player')
-    date_time_start = models.IntegerField()
-    date_time_end = models.IntegerField()
-    ranked = models.BooleanField(default=False)
-    netplay = models.BooleanField(default=True)
-    stadium_id = models.IntegerField(default=0)
-    away_score = models.IntegerField(default=0)
-    home_score = models.IntegerField(default=0)
-    innings_selected = models.IntegerField(default=3)
-    innings_played = models.IntegerField(default=3)
-    quitter = models.ForeignKey(RioUser, blank=True, null=True, on_delete=models.CASCADE, related_name='quitter_player')
-    valid = models.BooleanField(default=True)
-    average_ping = models.IntegerField(default=0)
-    lag_spikes = models.IntegerField(default=0)
-    version = models.CharField(max_length=50)
+class GameRoster(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="rosters")
+    character = models.ForeignKey('Character', on_delete=models.CASCADE)
+    player = models.ForeignKey(User, on_delete=models.CASCADE)
+    roster_location = models.IntegerField()
+    is_home_team = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('game', 'roster_location', 'is_home_team')
+
+    def __str__(self):
+        team_str = "Home" if self.is_home_team else "Away"
+        return f"{self.player.username} ({team_str}) - {self.character.name} in Game {self.game.game_id}, Roster Loc: {self.roster_location}"
 
 
-class CharacterPositionSummary(models.Model):
-    pitches_at_p = models.IntegerField(default=0)
-    pitches_at_c = models.IntegerField(default=0)
-    pitches_at_1b = models.IntegerField(default=0)
-    pitches_at_2b = models.IntegerField(default=0)
-    pitches_at_3b = models.IntegerField(default=0)
-    pitches_at_ss = models.IntegerField(default=0)
-    pitches_at_lf = models.IntegerField(default=0)
-    pitches_at_cf = models.IntegerField(default=0)
-    pitches_at_rf = models.IntegerField(default=0)
-    batter_outs_at_p = models.IntegerField(default=0)
-    batter_outs_at_c = models.IntegerField(default=0)
-    batter_outs_at_1b = models.IntegerField(default=0)
-    batter_outs_at_2b = models.IntegerField(default=0)
-    batter_outs_at_3b = models.IntegerField(default=0)
-    batter_outs_at_ss = models.IntegerField(default=0)
-    batter_outs_at_lf = models.IntegerField(default=0)
-    batter_outs_at_cf = models.IntegerField(default=0)
-    batter_outs_at_rf = models.IntegerField(default=0)
-    outs_at_p = models.IntegerField(default=0)
-    outs_at_c = models.IntegerField(default=0)
-    outs_at_1b = models.IntegerField(default=0)
-    outs_at_2b = models.IntegerField(default=0)
-    outs_at_3b = models.IntegerField(default=0)
-    outs_at_ss = models.IntegerField(default=0)
-    outs_at_lf = models.IntegerField(default=0)
-    outs_at_cf = models.IntegerField(default=0)
-    outs_at_rf = models.IntegerField(default=0)
-
-
-class CharacterGameSummary(models.Model):
-    game = models.ForeignKey(Game, null=False, on_delete=models.CASCADE)
-    char = models.ForeignKey(Character, null=False, on_delete=models.CASCADE)
-    user = models.ForeignKey(RioUser, null=False, on_delete=models.CASCADE)
-    character_position_summary = models.ForeignKey(CharacterPositionSummary, null=False, on_delete=models.CASCADE)
+class GameEventSummary(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    character = models.ForeignKey(Character, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     team_id = models.IntegerField(default=0)
-    roster_loc = models.IntegerField(default=0)  # 0-8
+    roster_loc = models.IntegerField(default=0)
     captain = models.BooleanField(default=False)
     superstar = models.BooleanField(default=False)
     fielding_hand = models.BooleanField(default=False)
     batting_hand = models.BooleanField(default=False)
-    #Defensive Stats
-    batters_faced = models.IntegerField(default=0)
-    runs_allowed = models.IntegerField(default=0)
-    earned_runs = models.IntegerField(default=0)
-    batters_walked = models.IntegerField(default=0)
-    batters_hit = models.IntegerField(default=0)
-    hits_allowed = models.IntegerField(default=0)
-    homeruns_allowed = models.IntegerField(default=0)
-    pitches_thrown = models.IntegerField(default=0)
-    stamina = models.IntegerField(default=0)
-    was_pitcher = models.IntegerField(default=0)
-    strikeouts_pitched = models.IntegerField(default=0)
-    star_pitches_thrown = models.IntegerField(default=0)
-    big_plays = models.IntegerField(default=0)
-    outs_pitched = models.IntegerField(default=0)
-    #Offensive Stats
-    at_bats = models.IntegerField(default=0)
-    plate_appearances = models.IntegerField(default=0)
-    hits = models.IntegerField(default=0)
-    singles = models.IntegerField(default=0)
-    doubles = models.IntegerField(default=0)
-    triples = models.IntegerField(default=0)
-    homeruns = models.IntegerField(default=0)
-    successful_bunts = models.IntegerField(default=0)
-    sac_flys = models.IntegerField(default=0)
-    strikeouts = models.IntegerField(default=0)
-    walks_bb = models.IntegerField(default=0)
-    walks_hit = models.IntegerField(default=0)
-    rbi = models.IntegerField(default=0)
-    bases_stolen = models.IntegerField(default=0)
-    star_hits = models.IntegerField(default=0)
-    #Star tracking (Not in JSON. Calculated in populate_db)
-    offensive_star_swings = models.IntegerField(default=0)
-    offensive_stars_used = models.IntegerField(default=0)
-    offensive_stars_put_in_play = models.IntegerField(default=0)
-    offensive_star_successes = models.IntegerField(default=0)
-    offensive_star_chances = models.IntegerField(default=0)
-    offensive_star_chances_won = models.IntegerField(default=0)
-    defensive_star_pitches = models.IntegerField(default=0)
-    defensive_stars_used = models.IntegerField(default=0)
-    defensive_star_successes = models.IntegerField(default=0)
-    defensive_star_chances = models.IntegerField(default=0)
-    defensive_star_chances_won = models.IntegerField(default=0)
+    position_stats = models.JSONField(default=dict)  # Stores position-specific stats
+    offensive_stats = models.JSONField(default=dict)  # Offensive stats
+    defensive_stats = models.JSONField(default=dict)  # Defensive stats
+    runner_stats = models.JSONField(default=dict)  # Runner stats
+    fielding_stats = models.JSONField(default=dict)  # Fielding stats
+    contact_stats = models.JSONField(default=dict)  # Contact stats
+    pitch_stats = models.JSONField(default=dict)  # Pitch stats
+    star_stats = models.JSONField(default=dict)  # Star stats
+
+    def __str__(self):
+        return f"Summary for {self.user.username}, Game {self.game.game_id}, Character: {self.character.name}, Roster Loc: {self.roster_loc}"
 
 
-class Runner(models.Model):
-    runner_character_game_summary = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE)
-    initial_base = models.IntegerField(default=0)
-    result_base = models.IntegerField(default=0)
-    out_type = models.IntegerField(default=0)
-    out_location = models.IntegerField(default=0)
-    steal = models.IntegerField(default=0)
-
-
-class FieldingSummary(models.Model):
-    fielder_character_game_summary = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE)
-    position = models.IntegerField(default=0)
-    action = models.IntegerField(default=0)
-    jump = models.IntegerField(default=0)
-    bobble = models.IntegerField(default=0)
-    swap = models.BooleanField(default=False)
-    manual_select = models.IntegerField(default=0)
-    fielder_x_pos = models.FloatField(default=0.0)
-    fielder_y_pos = models.FloatField(default=0.0)
-    fielder_z_pos = models.FloatField(default=0.0)
-
-
-class ContactSummary(models.Model):
-    fielding_summary = models.ForeignKey(FieldingSummary, null=True, on_delete=models.CASCADE)
-    type_of_contact = models.IntegerField(default=0)
-    charge_power_up = models.FloatField(default=0.0)
-    charge_power_down = models.FloatField(default=0.0)
-    star_swing_five_star = models.IntegerField(default=0)
-    input_direction = models.IntegerField(default=0)
-    input_direction_stick = models.IntegerField(default=0)
-    frame_of_swing_upon_contact = models.IntegerField(default=0)
-    ball_power = models.IntegerField(default=0)
-    ball_horiz_angle = models.IntegerField(default=0)
-    ball_vert_angle = models.IntegerField(default=0)
-    contact_absolute = models.FloatField(default=0.0)
-    contact_quality = models.FloatField(default=0.0)
-    rng1 = models.FloatField(default=0.0)
-    rng2 = models.FloatField(default=0.0)
-    rng3 = models.FloatField(default=0.0)
-    ball_x_velocity = models.FloatField(default=0.0)
-    ball_y_velocity = models.FloatField(default=0.0)
-    ball_z_velocity = models.FloatField(default=0.0)
-    ball_x_contact_pos = models.FloatField(default=0.0)
-    ball_z_contact_pos = models.FloatField(default=0.0)
-    ball_x_landing_pos = models.FloatField(default=0.0)
-    ball_y_landing_pos = models.FloatField(default=0.0)
-    ball_z_landing_pos = models.FloatField(default=0.0)
-    ball_max_height = models.FloatField(default=0.0)
-    ball_hang_time = models.FloatField(default=0.0)
-    primary_result = models.IntegerField(default=0)
-    secondary_result = models.IntegerField(default=0)
-
-
-class PitchSummary(models.Model):
-    contact_summary = models.ForeignKey(ContactSummary, null=True, on_delete=models.CASCADE)
-    pitch_type = models.IntegerField(default=0)
-    charge_pitch_type = models.IntegerField(default=0)
-    star_pitch = models.IntegerField(default=0)
-    pitch_speed = models.IntegerField(default=0)
-    d_ball = models.BooleanField(default=False)
-    type_of_swing = models.IntegerField(default=0)
-    ball_position_strikezone = models.IntegerField(default=0)
-    in_strikezone = models.BooleanField(default=False)
-    bat_x_contact_pos = models.FloatField(default=0.0)
-    bat_z_contact_pos = models.FloatField(default=0.0)
-
-
-class Event(models.Model):
-    game = models.ForeignKey(Game, null=False, on_delete=models.CASCADE)
-    pitcher = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE, related_name='event_pitcher')  # Based on "Pitcher Roster Loc" in JSON
-    batter = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE, related_name='event_batter')
-    catcher = models.ForeignKey(CharacterGameSummary, null=False, on_delete=models.CASCADE, related_name='event_catcher')
-    runner_on_0 = models.ForeignKey(Runner, null=False, on_delete=models.CASCADE, related_name='event_runner_0')
-    runner_on_1 = models.ForeignKey(Runner, null=True, on_delete=models.CASCADE, related_name='event_runner_1')
-    runner_on_2 = models.ForeignKey(Runner, null=True, on_delete=models.CASCADE, related_name='event_runner_2')
-    runner_on_3 = models.ForeignKey(Runner, null=True, on_delete=models.CASCADE, related_name='event_runner_3')
-    pitch_summary = models.ForeignKey(PitchSummary, null=True, on_delete=models.CASCADE)
+class GameEvent(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    pitcher = models.ForeignKey(GameEventSummary, on_delete=models.CASCADE, related_name='event_pitcher')
+    batter = models.ForeignKey(GameEventSummary, on_delete=models.CASCADE, related_name='event_batter')
+    catcher = models.ForeignKey(GameEventSummary, on_delete=models.CASCADE, related_name='event_catcher')
+    runners = models.ManyToManyField(GameEventSummary, related_name='event_runners')
     event_num = models.IntegerField(default=0)
     away_score = models.IntegerField(default=0)
     home_score = models.IntegerField(default=0)
@@ -630,22 +376,8 @@ class Event(models.Model):
     result_num_of_outs = models.IntegerField(default=0)
     result_rbi = models.IntegerField(default=0)
     result_of_ab = models.IntegerField(default=0)
-
-
-class Ladder(models.Model):
-    tag_set = models.ForeignKey(TagSet, null=False, on_delete=models.CASCADE)
-    community_user = models.ForeignKey(CommunityUser, null=False, on_delete=models.CASCADE)
-    started_searching = models.IntegerField(default=0)
-    rating = models.IntegerField(default=0)
-    rd = models.IntegerField(default=0)
-    vol = models.FloatField(default=0.0)
-
-
-class GameHistory(models.Model):
-    game = models.ForeignKey(Game, null=True, on_delete=models.CASCADE)
-    tag_set = models.ForeignKey(TagSet, null=False, on_delete=models.CASCADE)
-    winner_comm_user = models.ForeignKey(CommunityUser, null=False, on_delete=models.CASCADE, related_name='winner_comm_user')
-    loser_comm_user = models.ForeignKey(CommunityUser, null=False, on_delete=models.CASCADE, related_name='loser_comm_user')
+    winner_comm_user = models.ForeignKey('CommunityUser', null=True, on_delete=models.SET_NULL, related_name='winner_comm_user')
+    loser_comm_user = models.ForeignKey('CommunityUser', null=True, on_delete=models.SET_NULL, related_name='loser_comm_user')
     winner_score = models.IntegerField(default=0)
     loser_score = models.IntegerField(default=0)
     winner_elo = models.IntegerField(default=0)
@@ -653,4 +385,22 @@ class GameHistory(models.Model):
     winner_accept = models.BooleanField(default=True)
     loser_accept = models.BooleanField(null=True)
     admin_accept = models.BooleanField(null=True)
-    date_created = models.IntegerField(null=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Event {self.event_num} in Game {self.game.game_id}, Inning: {self.inning}.{self.half_inning}"
+
+
+class Ladder(models.Model):
+    tag_set = models.ForeignKey('TagSet', on_delete=models.CASCADE, db_index=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
+    started_searching = models.DateTimeField(default=timezone.now)
+    rating = models.IntegerField(default=0)
+    rd = models.IntegerField(default=0)
+    vol = models.FloatField(default=0.0)
+
+    class Meta:
+        unique_together = ('tag_set', 'user') #A user only has one ladder per tag set.
+
+    def __str__(self):
+        return f"{self.user.username} - {self.tag_set.name} Ladder"

@@ -16,7 +16,7 @@ Project Rio - {{ tag_set.name }}
 <h1>Gamemode does not exist, {{ tag_set_name }}</h1>
 
 {% else %}
-{% with tag_set.get_status as status %}
+{% with tag_set.display_alert as status %}
 <div class="alert alert-{{ status.alert }} mt-3" role="alert">
     {{ status.message }}
 </div>
@@ -33,11 +33,17 @@ Project Rio - {{ tag_set.name }}
             <tbody>
                 <tr>
                     <td>Community</td>
-                    <td><a href="{% url 'frontend:communities' tag_set.community.name %}" class="link-dark">{{ tag_set.community.name }}</a></td>
+                    <td>
+                        {% if tag_set.community %}
+                            <a href="{% url 'frontend:community_detail' tag_set.community.name %}" class="link-dark">{{ tag_set.community.name }}</a>
+                        {% else %}
+                            No community
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <td>Type</td>
-                    <td>{{ tag_set.tagset_type }}</td>
+                    <td>{{ tag_set.tagset_type|title }}</td>
                 </tr>
                 <tr>
                     <td>Start Date</td>
@@ -51,7 +57,7 @@ Project Rio - {{ tag_set.name }}
         </table>
     </div>
 </div>
-{% include 'frontend/snippets/cards/tags.html' with fs=2 tags=tag_set.tags.all active='all' %}
+{% include 'frontend/snippets/cards/tags.html' with fs=2 tags=tag_set.tags.all status='all' %}
 
 {% if tag_set.community %}
     {% include 'frontend/snippets/cards/community.html' with fs=2 community=tag_set.community %}
