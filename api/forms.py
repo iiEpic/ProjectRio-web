@@ -7,7 +7,7 @@ class TagForm(forms.Form):
     name = forms.CharField(label='Name', max_length=32)
     tag_type = forms.CharField(label='Tag Type', max_length=16)
     description = forms.CharField(label='Description', max_length=300)
-    community_name = forms.CharField(label='Name', max_length=255)
+    community_slug = forms.CharField(label='Community Slug', max_length=255)
     gecko_code = forms.CharField(widget=forms.Textarea, required=False)
     gecko_code_desc = forms.CharField(widget=forms.Textarea, required=False)
 

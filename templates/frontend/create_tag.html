@@ -37,10 +37,10 @@ Project Rio - Create Tag
             </div>
             <div class="input-group mb-3">
                 <label class="input-group-text" for="inputGroupSelect02">Community</label>
-                <select class="form-select" id="inputGroupSelect02" name="community_name">
+                <select class="form-select" id="inputGroupSelect02" name="community_slug">
                     <option value="---" selected>---</option>
-                    {% for community_user in communities %}
-                    <option value="{{ community_user.community.slug }}">{{ community_user.community.name }}</option>
+                    {% for community in communities %}
+                    <option value="{{ community.slug }}">{{ community.name }}</option>
                     {% endfor %}
                 </select>
             </div>

@@ -252,6 +252,25 @@ class Tag(models.Model):
         formatted_string = re.sub(r"([a-fA-F0-9]{8} [a-fA-F0-9]{8})", r"\1<br/>", self.gecko_code)
         return formatted_string
 
+    def to_dict(self):
+        """
+        Returns a dictionary representation of the Tag object.
+        """
+        return {
+            'id': self.id,
+            'name': self.name,
+            'slug': self.slug,
+            'tag_type': self.tag_type,
+            'community_id': self.community.id if self.community else None,
+            'community_name': self.community.name if self.community else None,
+            'description': self.description,
+            'gecko_code': self.gecko_code if self.gecko_code else None,
+            'gecko_code_desc': self.gecko_code_desc if self.gecko_code_desc else None,
+            'active': self.active,
+            'date_created': self.date_created.isoformat() if self.date_created else None,
+            'last_modified': self.last_modified.isoformat() if self.last_modified else None,
+        }
+
 
 @receiver(pre_save, sender=Tag)
 def tag_pre_save(sender, instance, **kwargs):

@@ -183,7 +183,10 @@ class Register(View):
 class Tags(LoginRequiredMixin, View):
 
     def create(self):
-        communities = models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')
+        if self.request.user.is_staff:
+            communities = models.Community.objects.all()
+        else:
+            communities = [i.community for i in models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')]
         return render(self.request, 'frontend/create_tag.html', context={'communities': communities})
 
     def get(self, request, *args, **kwargs):
@@ -217,8 +220,8 @@ class Tags(LoginRequiredMixin, View):
     def post(self, request):
         form = TagForm(request.POST)
         if form.is_valid():
-            form.cleaned_data['community'] = models.Community.objects.filter(name__iexact=form.cleaned_data.get('community_name')).first()
-            form.cleaned_data.pop('community_name')
+            form.cleaned_data['community'] = models.Community.objects.filter(slug__iexact=form.cleaned_data.get('community_slug')).first()
+            form.cleaned_data.pop('community_slug')
             community_user = models.CommunityUser.objects.filter(community=form.cleaned_data['community'], user=self.request.user).first()
 
             # The following is being checked:
@@ -226,14 +229,9 @@ class Tags(LoginRequiredMixin, View):
             # - CommunityUser exists for the community given and user trying to post
             # - CommunityUser is an admin in that Community
             # Check if the user has access to add a Tag to this community, and they didn't forge the post request
-            if form.cleaned_data['community'] is None or community_user is None or community_user.role.name != 'Admin':
-                form.add_error('community_name', 'Could not find a community with that name')
-                communities = models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')
-                return render(
-                    request,
-                    'frontend/create_tag.html',
-                    context={'communities': communities, 'errors': form.errors}
-                )
+            if not self.request.user.is_staff and (form.cleaned_data['community'] is None or community_user is None or community_user.role.name != 'Admin'):
+                form.add_error('community_slug', 'Could not find a community with that name')
+                return redirect('frontend:tag_create')
 
             if form.cleaned_data['gecko_code'] == '':
                 form.cleaned_data.pop('gecko_code')
@@ -243,6 +241,8 @@ class Tags(LoginRequiredMixin, View):
 
             return redirect(reverse('frontend:tag_detail',
                                     kwargs={'slug': tag_object.slug}))
+        else:
+            return redirect('frontend:tag_create')
 
 
 class Tagsets(LoginRequiredMixin, View):
