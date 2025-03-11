@@ -39,6 +39,12 @@ class TagForm(forms.ModelForm):
             if self.instance.pk:
                 self.fields['community_slug'].widget.attrs['disabled'] = True
                 self.fields['name'].widget.attrs['disabled'] = True
+                self.fields['active'] = forms.BooleanField(label='Active')
+                self.fields['active'].widget.attrs['class'] = 'form-check-input'
+                self.fields['active'].widget.attrs['type'] = 'checkbox'
+                self.fields['active'].widget.attrs['role'] = 'switch'
+                self.fields['active'].widget.attrs['id'] = 'active'
+                self.fields['active'].widget.attrs['checked'] = self.instance.active
 
     def is_valid(self, *args, **kwargs):
 
@@ -90,6 +96,9 @@ class TagForm(forms.ModelForm):
             if self.cleaned_data['tag_type'] == 'component' or self.cleaned_data['gecko_code'] == '':
                 self.cleaned_data['gecko_code'] = None
                 self.cleaned_data['gecko_code_desc'] = None
+
+            if 'active' in self.data:
+                self.cleaned_data['active'] = True if self.data['active'] in ['on', 'True'] else False
 
             if self.errors:
                 print(self.errors)

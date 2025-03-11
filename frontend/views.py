@@ -259,6 +259,7 @@ class TagDelete(LoginRequiredMixin, View):
             }
         )
 
+
 class TagList(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         # Check if we are looking for a specific TagSet
@@ -322,11 +323,13 @@ class TagEdit(LoginRequiredMixin, View):
         form_data['slug'] = kwargs.get('slug')
         form_data['edit'] = True
         form_data['request'] = self.request
+        if 'active' not in form_data:
+            form_data['active'] = 'off'
         form = TagForm(form_data)
 
         if form.is_valid():
-
             for k, v in form.cleaned_data.items():
+                print(k, v)
                 if hasattr(tag_object, k) and getattr(tag_object, k) != v:
                     setattr(tag_object, k, v)
 

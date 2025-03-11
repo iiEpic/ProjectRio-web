@@ -24,7 +24,7 @@ Project Rio - {{ tag.name }}
             <div class="mt-2 float-end align-middle">
                 <div class="btn-group" role="group" aria-label="Basic example">
                     <a href="{% url 'frontend:tag_edit' tag.slug %}" class="btn btn-primary">Edit</a>
-                    <a href="{% url 'frontend:tag_delete' tag.slug %}" class="btn btn-outline-dark btn-danger">Delete</a>
+                    <a href="{% url 'frontend:tag_delete' tag.slug %}" class="btn btn-danger">Delete</a>
                 </div>
 
             </div>
@@ -32,6 +32,11 @@ Project Rio - {{ tag.name }}
         </div>
     </div>
     <div class="card-body">
+        {% if not tag.active %}
+            <div class="alert alert-danger" role="alert">
+                This tag is inactive.
+            </div>
+        {% endif %}
         <table class="table table-hover mt-3">
             <tr>
                 <td>Date Created</td>
