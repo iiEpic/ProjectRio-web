@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-Project Rio - Create Tag
+Project Rio - Edit Tag
 {% endblock %}
 
 {% block body %}
@@ -16,6 +16,7 @@ Project Rio - Create Tag
 
 <form method="POST" class="needs-validation" novalidate>
     {% csrf_token %}
+    {{ form.hidden_community_slug }}
     <div class="card mt-3 w-50 mx-auto">
         <div class="card-header">
             <div class="fs-3">
@@ -24,52 +25,50 @@ Project Rio - Create Tag
         </div>
         <div class="card-body">
             <div class="input-group mb-3">
-                <label class="input-group-text" for="inputGroupSelect01">Tag Type</label>
-                <select class="form-select" id="inputGroupSelect01" name="tag_type">
-                    <option value="0" selected>---</option>
-                    <option value="component">Component</option>
-                    <option value="gecko_code">Gecko Code</option>
-                </select>
+                <label class="input-group-text" for="{{ form.tag_type.id_for_label }}">Tag Type</label>
+                {{ form.tag_type }}
             </div>
+            {{ form.tag_type.errors }}
             <div class="input-group mb-3">
-                <span class="input-group-text">Tag Name</span>
-                <input type="text" class="form-control" id="name" name="name" aria-label="Tag Name" aria-describedby="basic-addon1">
+                <span class="input-group-text">{{ form.name.label }}</span>
+                {{ form.name }}
             </div>
+            {{ form.name.errors }}
             <div class="input-group mb-3">
-                <label class="input-group-text" for="inputGroupSelect02">Community</label>
-                <select class="form-select" id="inputGroupSelect02" name="community_slug">
-                    <option value="---" selected>---</option>
-                    {% for community in communities %}
-                    <option value="{{ community.slug }}">{{ community.name }}</option>
-                    {% endfor %}
-                </select>
+                <label class="input-group-text" for="{{ form.community_slug.id_for_label }}">Community</label>
+                {{ form.community_slug }}
             </div>
+            {{ form.community_slug.errors }}
             <div class="input-group mb-3">
-                <span class="input-group-text">Description</span>
-                <input type="text" class="form-control" id="description" name="description" aria-label="Description">
+                <span class="input-group-text">{{ form.description.label }}</span>
+                {{ form.description }}
             </div>
-            <div id="gecko_fields" style="display: none;">
+            {{ form.description.errors }}
+            <div id="gecko_fields" style="display: {% if form.tag_type.value == 'gecko_code' %}block{% else %}none{% endif %};">
                 <div class="input-group mb-3">
-                    <span class="input-group-text">Gecko Code Description</span>
-                    <input type="text" class="form-control" id="gecko_code_desc" name="gecko_code_desc" aria-label="Gecko Code Description">
+                    <span class="input-group-text">{{ form.gecko_code_desc.label }}</span>
+                    {{ form.gecko_code_desc }}
                 </div>
+                {{ form.gecko_code_desc.errors }}
                 <div class="input-group">
-                    <span class="input-group-text">Gecko Code</span>
-                    <textarea class="form-control" style="min-height: 150px;" aria-label="Description" id="gecko_code" name="gecko_code"></textarea>
+                    <span class="input-group-text">{{ form.gecko_code.label }}</span>
+                    {{ form.gecko_code }}
                 </div>
+                {{ form.gecko_code.errors }}
             </div>
         </div>
         <div class="card-footer">
-            <button type="submit" class="btn btn-success float-end">Create Tag</button>
+            <button type="submit" class="btn btn-success float-end">Save Changes</button>
         </div>
     </div>
 </form>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const tagTypeSelect = document.getElementById('inputGroupSelect01');
+        const tagTypeSelect = document.getElementById('{{ form.tag_type.id_for_label }}');
         const geckoFields = document.getElementById('gecko_fields');
-        const geckoCodeDesc = document.getElementById('gecko_code_desc');
-        const geckoCode = document.getElementById('gecko_code');
+        const geckoCodeDesc = document.getElementById('{{ form.gecko_code_desc.id_for_label }}');
+        const geckoCode = document.getElementById('{{ form.gecko_code.id_for_label }}');
 
         function toggleGeckoFields() {
             if (tagTypeSelect.value === 'gecko_code') {

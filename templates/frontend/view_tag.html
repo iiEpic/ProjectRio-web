@@ -20,6 +20,15 @@ Project Rio - {{ tag.name }}
     <div class="card-header">
         <div>
             <span class="display-5">{{ tag.name }} Tag</span>
+            {% if tag.editable %}
+            <div class="mt-2 float-end align-middle">
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <a href="{% url 'frontend:tag_edit' tag.slug %}" class="btn btn-primary">Edit</a>
+                    <a href="{% url 'frontend:tag_delete' tag.slug %}" class="btn btn-outline-dark btn-danger">Delete</a>
+                </div>
+
+            </div>
+            {% endif %}
         </div>
     </div>
     <div class="card-body">

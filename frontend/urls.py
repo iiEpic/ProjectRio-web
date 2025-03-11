@@ -15,9 +15,11 @@ urlpatterns = [
     path("gamemode/<str:slug>/", views.Tagsets.as_view(), name='gamemode_detail'),
 
     # Tags
-    path('tag/', views.Tags.as_view(), name='tag_list'),
-    path('tag/create/', views.Tags.as_view(), name='tag_create'),
-    path('tag/<str:slug>/', views.Tags.as_view(), name='tag_detail'),
+    path('tag/', views.TagList.as_view(), name='tag_list'),
+    path('tag/create/', views.TagCreate.as_view(), name='tag_create'),
+    path('tag/<str:slug>/delete/', views.TagDelete.as_view(), name='tag_delete'),
+    path('tag/<str:slug>/edit/', views.TagEdit.as_view(), name='tag_edit'),
+    path('tag/<str:slug>/', views.TagList.as_view(), name='tag_detail'),
 
     # Communities
     path('community/', views.Community.as_view(), name='community_list'),

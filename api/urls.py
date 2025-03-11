@@ -7,7 +7,10 @@ app_name = 'api'
 urlpatterns = [
     # ----- Start v2 Endpoints ----- #
     # Create paths
-    path('v2/tags/create/', views.TagCreate.as_view(), name='tag-create'),
+    path('v2/tags/', views.TagListView.as_view(), name='tag-list'),
+    path('v2/tags/create/', views.TagCreateView.as_view(), name='tag-create'),
+    path('v2/tags/<str:slug>/', views.TagDetailView.as_view(), name='tag-detail'),
+    path('v2/tags/<str:slug>/patch/', views.TagPatchView.as_view(), name='tag-patch'),
 
     # Detailed paths
     path('v2/usergroups/<int:pk>/', views.UserGroupDetail.as_view(), name='usergroup-detail'),
@@ -18,7 +21,6 @@ urlpatterns = [
     path('v2/communities/<int:pk>/', views.CommunityDetail.as_view(), name='community-detail'),
     path('v2/roles/<int:pk>/', views.RoleDetail.as_view(), name='role-detail'),
     path('v2/communityusers/<int:pk>/', views.CommunityUserDetail.as_view(), name='communityuser-detail'),
-    path('v2/tags/<int:pk>/', views.TagDetail.as_view(), name='tag-detail'),
     path('v2/tagsets/<int:pk>/', views.TagSetDetail.as_view(), name='tagset-detail'),
     path('v2/games/<int:pk>/', views.GameDetail.as_view(), name='game-detail'),
     path('v2/gamerosters/<int:pk>/', views.GameRosterDetail.as_view(), name='gameroster-detail'),
@@ -34,7 +36,6 @@ urlpatterns = [
     path('v2/communities/', views.CommunityList.as_view(), name='community-list'),
     path('v2/roles/', views.RoleList.as_view(), name='role-list'),
     path('v2/communityusers/', views.CommunityUserList.as_view(), name='communityuser-list'),
-    path('v2/tags/', views.TagList.as_view(), name='tag-list'),
     path('v2/tagsets/', views.TagSetList.as_view(), name='tagset-list'),
     path('v2/games/', views.GameList.as_view(), name='game-list'),
     path('v2/gamerosters/', views.GameRosterList.as_view(), name='gameroster-list'),

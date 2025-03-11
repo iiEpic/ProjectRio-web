@@ -3,14 +3,16 @@ from api.authentication import TokenAuthentication
 from api.mixins import PermissionRequiredMixin
 from datetime import datetime, UTC
 from django.db.models import Q
+from django.urls import resolve
 from django.utils.text import slugify
-from api.forms import PopulateDBForm, TagForm
+from api.forms import PopulateDBForm, TagForm, TagPatchForm
 from api.models import (
     Token, UserGroup, UserProfile, Character, CharacterChemistry,
     Community, Role, CommunityUser, Tag, TagSet, Game, GameRoster,
     GameEventSummary, GameEvent, Ladder
 )
 from rest_framework import status
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication
@@ -132,19 +134,6 @@ class CommunityUserDetail(APIView):
         except CommunityUser.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = CommunityUserSerializer(community_user)
-        return Response(serializer.data)
-
-
-class TagDetail(APIView):
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        try:
-            tag = Tag.objects.get(pk=pk)
-        except Tag.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = TagSerializer(tag)
         return Response(serializer.data)
 
 
@@ -304,17 +293,6 @@ class CommunityUserList(APIView):
         serializer = CommunityUserSerializer(community_users, many=True)
         return Response(serializer.data)
 
-
-class TagList(APIView):
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        tags = Tag.objects.all()
-        serializer = TagSerializer(tags, many=True)
-        return Response(serializer.data)
-
-
 class TagSetList(APIView):
     authentication_classes = [TokenAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
@@ -373,55 +351,6 @@ class LadderList(APIView):
         ladders = Ladder.objects.all()
         serializer = LadderSerializer(ladders, many=True)
         return Response(serializer.data)
-
-
-class TagCreate(APIView, PermissionRequiredMixin):
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-    permission_required = 'create.tag'
-
-    def post(self, request, *args, **kwargs):
-        form = TagForm(request.POST)
-        user_profile = UserProfile.objects.filter(user=self.request.user).first()
-
-        if user_profile is None:
-            return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        if form.is_valid():
-            if form.cleaned_data.get('name').lower() in INVALID_NAMES:
-                form.add_error('name', 'Prohibited name.')
-                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Make sure that tag does not use the same name as an existing tag, comm, or tag_set
-            tag = Tag.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
-            tag_slugified = Tag.objects.filter(slug__iexact=slugify(form.cleaned_data.get('name'))).first()
-            community = Community.objects.filter(slug__iexact=form.cleaned_data.get('name')).first()
-            tag_set = TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
-            if tag or tag_slugified or tag_set or community:
-                form.add_error('name', 'Conflicting tag, community or tagset name.')
-                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Check if the user has access to view this community
-            community = Community.objects.filter(slug__iexact=form.cleaned_data.get('community_slug')).first()
-            community_user = CommunityUser.objects.filter(community=community, user=user_profile.user).first()
-            if community.private and (community_user is None or community_user.status == 'banned'):
-                form.add_error('community_slug', 'Community does not exist by that name.')
-            elif not request.user.is_staff and (not community_user or not community_user.admin):
-                form.add_error('community_slug',
-                               'You do not have permissions to create a tag for this community. '
-                               'Please ask an admin.')
-
-            # All our checks are done, check if we have any errors
-            if form.errors:
-                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                # No errors, create our Tag
-                form.cleaned_data['community'] = community
-                form.cleaned_data.pop('community_slug')
-                tag = Tag.objects.create(**form.cleaned_data)
-                return Response({'tags': [tag.to_dict()]}, status=status.HTTP_201_CREATED)
-        # Form had errors originally
-        return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PopulateDB(APIView):
@@ -517,6 +446,115 @@ class PopulateDB(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+# NEW METHODS BELOW
+class TagListView(ListAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+class TagCreateView(APIView, PermissionRequiredMixin):
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    permission_required = 'create.tag'
+
+    def post(self, request, *args, **kwargs):
+        form = TagForm(request.POST)
+        user_profile = UserProfile.objects.filter(user=request.user).first()
+
+        if user_profile is None:
+            return Response({'errors': {'user': ['User profile not found.']}}, status=status.HTTP_400_BAD_REQUEST)
+
+        if form.is_valid():
+            if form.cleaned_data.get('name').lower() in INVALID_NAMES:
+                form.add_error('name', 'Prohibited name.')
+                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            tag = Tag.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_slugified = Tag.objects.filter(slug__iexact=slugify(form.cleaned_data.get('name'))).first()
+            community_name = Community.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            tag_set = TagSet.objects.filter(name__iexact=form.cleaned_data.get('name')).first()
+            if tag or tag_slugified or tag_set or community_name:
+                form.add_error('name', 'Conflicting tag, community or tagset name.')
+                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            community = Community.objects.filter(slug__iexact=form.cleaned_data.get('community_slug')).first()
+            community_user = CommunityUser.objects.filter(community=community, user=user_profile.user).first()
+            if community.private and (community_user is None or community_user.status == 'banned'):
+                form.add_error('community_slug', 'Community does not exist by that name.')
+            elif not request.user.is_staff and (not community_user or not community_user.admin):
+                form.add_error('community_slug',
+                               'You do not have permissions to create a tag for this community. '
+                               'Please ask an admin.')
+
+            if form.errors:
+                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                form.cleaned_data['community'] = community
+                form.cleaned_data.pop('community_slug')
+                form.cleaned_data.pop('hidden_community_slug')
+                tag = Tag.objects.create(**form.cleaned_data)
+                return Response({'tags': [TagSerializer(tag).data]}, status=status.HTTP_201_CREATED)
+        return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TagDetailView(RetrieveAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    lookup_field = 'slug'
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+class TagPatchView(APIView, PermissionRequiredMixin):
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    permission_required = 'edit.tag'
+
+    def patch(self, *args, **kwargs):
+
+        # TODO: Edit this, the tag name is now in the url
+        # TODO: should be relatively simple, may need to remove some of those checks
+
+        # Modify our POST request to include the name from the url
+        post_data = self.request.POST.copy()
+        post_data['slug'] = kwargs.get('slug')
+
+        # Attempt to find the tag we are requesting and see if it exists
+        tag_object = Tag.objects.filter(slug=kwargs.get('slug')).first()
+        if tag_object is None:
+            return Response({'errors': 'Tag not found by slug provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if 'community_slug' not in post_data:
+            post_data['community_slug'] = tag_object.community.slug
+
+        if 'tag_type' not in post_data:
+            post_data['tag_type'] = tag_object.tag_type
+
+        post_data['name'] = tag_object.name
+        post_data['edit'] = True
+        post_data['request'] = self.request
+
+        form = TagForm(post_data)
+        user_profile = UserProfile.objects.filter(user=self.request.user).first()
+
+        if user_profile is None:
+            return Response({'errors': {'user': ['User profile not found.']}}, status=status.HTTP_400_BAD_REQUEST)
+
+        if form.is_valid():
+            if form.errors:
+                return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                for k, v in form.cleaned_data.items():
+                    if hasattr(tag_object, k) and v != '' and v != getattr(tag_object, k):
+                        setattr(tag_object, k, v)
+                        tag_object.save()
+
+                return Response({'tags': [TagSerializer(tag_object).data]}, status=status.HTTP_200_OK)
+        return Response({'errors': form.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # class TagCreate(APIView):

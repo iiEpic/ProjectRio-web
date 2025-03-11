@@ -1,4 +1,5 @@
 import json
+import re
 import requests
 
 from api import models
@@ -180,56 +181,33 @@ class Register(View):
         return render(request, 'frontend/register.html', context={})
 
 
-class Tags(LoginRequiredMixin, View):
-
-    def create(self):
+class TagCreate(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
         if self.request.user.is_staff:
             communities = models.Community.objects.all()
         else:
             communities = [i.community for i in models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')]
-        return render(self.request, 'frontend/create_tag.html', context={'communities': communities})
+        return render(self.request, 'frontend/create_tag.html', context={'form': TagForm(), 'communities': communities})
 
-    def get(self, request, *args, **kwargs):
-
-        # Check if we are creating a new TagSet
-        if request.path == '/tag/create/':
-            return self.create()
-
-        # Check if we are looking for a specific TagSet
-        if request.resolver_match.kwargs:
-            tag_object = models.Tag.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
-            if tag_object is not None:
-                tag_sets = list(models.TagSet.objects.filter(tags__name__iexact=tag_object.name))
-                for tag_set in tag_sets.copy():
-                    if models.CommunityUser.objects.filter(user=request.user, community=tag_set.community, status='active').first() is None:
-                        tag_sets.remove(tag_set)
-                return render(request, 'frontend/view_tag.html',
-                              context={'tag': tag_object, 'tag_sets': tag_sets})
-
-        # If we made it here, we are returning all TagSets to the user
-        tag_list = models.Tag.objects.all()
-        return render(
-            request,
-            'frontend/all_items.html',
-            context={
-                'item_type': 'tags',
-                'tags': tag_list
-                }
-            )
-
-    def post(self, request):
-        form = TagForm(request.POST)
+    def post(self, *args, **kwargs):
+        form = TagForm(self.request.POST)
         if form.is_valid():
-            form.cleaned_data['community'] = models.Community.objects.filter(slug__iexact=form.cleaned_data.get('community_slug')).first()
+            if 'community_slug' in form.cleaned_data:
+                community_slug = form.cleaned_data['community_slug']
+            else:
+                community_slug = form.cleaned_data['hidden_community_slug']
+            form.cleaned_data['community'] = models.Community.objects.filter(slug__iexact=community_slug).first()
             form.cleaned_data.pop('community_slug')
-            community_user = models.CommunityUser.objects.filter(community=form.cleaned_data['community'], user=self.request.user).first()
+            community_user = models.CommunityUser.objects.filter(community=form.cleaned_data['community'],
+                                                                 user=self.request.user).first()
 
             # The following is being checked:
             # - Community exists by the name the user gave
             # - CommunityUser exists for the community given and user trying to post
             # - CommunityUser is an admin in that Community
             # Check if the user has access to add a Tag to this community, and they didn't forge the post request
-            if not self.request.user.is_staff and (form.cleaned_data['community'] is None or community_user is None or community_user.role.name != 'Admin'):
+            if not self.request.user.is_staff and (form.cleaned_data[
+                                                       'community'] is None or community_user is None or community_user.role.name != 'Admin'):
                 form.add_error('community_slug', 'Could not find a community with that name')
                 return redirect('frontend:tag_create')
 
@@ -237,12 +215,133 @@ class Tags(LoginRequiredMixin, View):
                 form.cleaned_data.pop('gecko_code')
                 form.cleaned_data.pop('gecko_code_desc')
 
+            form.cleaned_data.pop('hidden_community_slug')
             tag_object = models.Tag.objects.create(**form.cleaned_data)
 
             return redirect(reverse('frontend:tag_detail',
                                     kwargs={'slug': tag_object.slug}))
         else:
+            if self.request.user.is_staff:
+                communities = models.Community.objects.all()
+            else:
+                communities = [i.community for i in
+                               models.CommunityUser.objects.filter(user=self.request.user, role__name='Admin')]
+            return render(self.request, 'frontend/create_tag.html',
+                          context={'form': form, 'communities': communities})
+
+
+class TagDelete(LoginRequiredMixin, View):
+
+    def get(self, *args, **kwargs):
+        # Below is just filler code until I get the above done
+        tag_list = models.Tag.objects.all()
+        return render(
+            self.request,
+            'frontend/all_items.html',
+            context={
+                'item_type': 'tags',
+                'tags': tag_list
+            }
+        )
+
+    def post(self, *args, **kwargs):
+        tag_object = models.Tag.objects.filter(slug__iexact=kwargs.get('slug')).first()
+        # Make sure the user has permissions to delete this object
+
+        # Below is just filler code until I get the above done
+        tag_list = models.Tag.objects.all()
+        return render(
+            self.request,
+            'frontend/all_items.html',
+            context={
+                'item_type': 'tags',
+                'tags': tag_list
+            }
+        )
+
+class TagList(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        # Check if we are looking for a specific TagSet
+        if 'slug' in kwargs:
+            tag_object = models.Tag.objects.filter(slug__iexact=kwargs['slug']).first()
+            if tag_object is not None:
+                tag_sets = list(models.TagSet.objects.filter(tags__name__iexact=tag_object.name))
+                for tag_set in tag_sets.copy():
+                    if (tag_set.community.private and
+                            models.CommunityUser.objects.filter(
+                                user=self.request.user,
+                                community=tag_set.community,
+                                status='active'
+                            ).first() is None
+                    ):
+                        tag_sets.remove(tag_set)
+
+                # Check if user can edit this tag
+                community_user = models.CommunityUser.objects.filter(user=self.request.user,
+                                                                     community=tag_object.community).first()
+
+                if self.request.user.is_staff or (community_user is not None and 'edit.tag' in [i.name for i in
+                                                                                           community_user.role.permissions.all()]):
+                    tag_object.editable = True
+
+                return render(self.request, 'frontend/view_tag.html',
+                              context={'tag': tag_object, 'tag_sets': tag_sets})
+
+        # If we made it here, we are returning all TagSets to the user
+        tag_list = models.Tag.objects.all()
+        return render(
+            self.request,
+            'frontend/all_items.html',
+            context={
+                'item_type': 'tags',
+                'tags': tag_list
+            }
+        )
+
+
+class TagEdit(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        tag = models.Tag.objects.filter(slug__iexact=kwargs.get('slug')).first()
+        if tag is None:
             return redirect('frontend:tag_create')
+
+        return render(
+            self.request,
+            'frontend/create_tag.html',
+            context={
+                'form': TagForm(instance=tag)
+            }
+        )
+
+    def post(self, *args, **kwargs):
+
+        tag_object = models.Tag.objects.filter(slug__iexact=kwargs.get('slug')).first()
+
+        form_data = self.request.POST.copy()
+        form_data['name'] = tag_object.name
+        form_data['slug'] = kwargs.get('slug')
+        form_data['edit'] = True
+        form_data['request'] = self.request
+        form = TagForm(form_data)
+
+        if form.is_valid():
+
+            for k, v in form.cleaned_data.items():
+                if hasattr(tag_object, k) and getattr(tag_object, k) != v:
+                    setattr(tag_object, k, v)
+
+            tag_object.save()
+            return redirect(reverse('frontend:tag_detail',
+                                    kwargs={'slug': tag_object.slug}))
+
+        form = TagForm(instance=tag_object)
+        return render(
+            self.request,
+            'frontend/create_tag.html',
+            context={
+                'form': form
+            }
+        )
 
 
 class Tagsets(LoginRequiredMixin, View):
@@ -263,7 +362,7 @@ class Tagsets(LoginRequiredMixin, View):
             tagset = models.TagSet.objects.filter(slug__iexact=request.resolver_match.kwargs['slug']).first()
             community_user = models.CommunityUser.objects.filter(user=request.user, community=tagset.community,
                                                                  status='active').first()
-            if tagset is None or community_user is None:
+            if tagset.community.private and (tagset is None or community_user is None):
                 return render(request, 'frontend/view_gamemode.html',
                               context={'tag_set': None, 'tag_set_name': kwargs['slug']})
 
